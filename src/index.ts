@@ -2,8 +2,8 @@ import * as Koa from 'koa'
 import { Route, matchRoute } from './Route'
 import * as E from 'fp-ts/Either'
 
-export const router = <Param>(
-  route: Route<Param>
+export const router = <Param, Query>(
+  route: Route<Param, Query>
 ) => async (
   ctx: Koa.Context,
   _next: () => Promise<unknown>
