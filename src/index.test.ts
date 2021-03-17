@@ -100,4 +100,23 @@ describe('Testing with koa', () => {
       )
     })
   })
+
+  it('Returns a 200 when the route and params match', async () => {
+    const userId = router(
+      pipe(
+        getRoute,
+        combineRoutes(literal('user')),
+        combineRoutes(param('id')),
+        combineRoutes(
+          validateParams(t.type({ id: numberDecoder }))
+        )
+      )
+    )
+
+    await withServer(userId, async server => {
+      const reply = await request(server)
+        .get('/user/123')
+        .expect(200)
+    })
+  })
 })
