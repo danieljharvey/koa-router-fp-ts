@@ -5,10 +5,13 @@ import {
   matchRoute,
   combineRoutes,
   getRoute,
+  postRoute,
   literal,
   param,
   validateParams,
   validateQuery,
+  validateData,
+  validateHeaders,
 } from './Route'
 import * as E from 'fp-ts/Either'
 import { pipe } from 'fp-ts/function'
@@ -45,65 +48,162 @@ const userWithQuery = pipe(
   )
 )
 
+const userWithHeaders = pipe(
+  getRoute,
+  combineRoutes(literal('users')),
+  combineRoutes(
+    validateHeaders(t.type({ sessionId: numberDecoder }))
+  )
+)
+
+const userWithData = pipe(
+  postRoute,
+  combineRoutes(literal('users')),
+  combineRoutes(
+    validateData(t.type({ dog: booleanDecoder }))
+  )
+)
+
 describe('Route matching', () => {
   it('Healthz endpoint', () => {
-    expect(matchRoute(healthz)('/healthz', 'get')).toEqual(
-      E.right({ params: {}, query: {} })
+    expect(
+      matchRoute(healthz)('/healthz', 'get', {}, {})
+    ).toEqual(
+      E.right({
+        params: {},
+        query: {},
+        data: {},
+        headers: {},
+      })
     )
     expect(
-      E.isRight(matchRoute(healthz)('/health', 'get'))
+      E.isRight(
+        matchRoute(healthz)('/health', 'get', {}, {})
+      )
     ).toBeFalsy()
     expect(
-      E.isRight(matchRoute(healthz)('/healthz', 'post'))
+      E.isRight(
+        matchRoute(healthz)('/healthz', 'post', {}, {})
+      )
     ).toBeFalsy()
   })
   it('Username endpoint', () => {
     expect(
-      matchRoute(userName)('/user/name', 'get')
-    ).toEqual(E.right({ params: {}, query: {} }))
+      matchRoute(userName)('/user/name', 'get', {}, {})
+    ).toEqual(
+      E.right({
+        params: {},
+        query: {},
+        data: {},
+        headers: {},
+      })
+    )
     expect(
       E.isRight(
-        matchRoute(userName)('/user/oh/name', 'get')
+        matchRoute(userName)('/user/oh/name', 'get', {}, {})
       )
     ).toBeFalsy()
   })
 
   it('userId endpoint', () => {
-    expect(matchRoute(userId)('/user/123', 'get')).toEqual(
-      E.right({ params: { id: 123 }, query: {} })
-    )
     expect(
-      E.isRight(matchRoute(userId)('/user/name', 'get'))
-    ).toBeFalsy()
-
-    expect(
-      E.isRight(matchRoute(userId)('/user/oh/name', 'get'))
-    ).toBeFalsy()
-  })
-
-  it('userWithQuery endpoint', () => {
-    expect(
-      matchRoute(userWithQuery)(
-        '/users?id=123&flag=true',
-        'get'
-      )
+      matchRoute(userId)('/user/123', 'get', {}, {})
     ).toEqual(
       E.right({
-        params: {},
-        query: { id: 123, flag: true },
+        params: { id: 123 },
+        query: {},
+        data: {},
+        headers: {},
       })
     )
     expect(
       E.isRight(
-        matchRoute(userWithQuery)(
-          '/users?id=dog&flag=tue',
-          'get'
+        matchRoute(userId)('/user/name', 'get', {}, {})
+      )
+    ).toBeFalsy()
+
+    expect(
+      E.isRight(
+        matchRoute(userId)('/user/oh/name', 'get', {}, {})
+      )
+    ).toBeFalsy()
+  })
+
+  it('userWithHeaders endpoint', () => {
+    expect(
+      matchRoute(userWithHeaders)(
+        '/users',
+        'get',
+        {},
+        { sessionId: '123' }
+      )
+    ).toEqual(
+      E.right({
+        params: {},
+        query: {},
+        data: {},
+        headers: { sessionId: 123 },
+      })
+    )
+    expect(
+      E.isRight(
+        matchRoute(userWithHeaders)(
+          '/users',
+          'get',
+          {},
+          { sessionId: 'sdfsdf' }
         )
       )
     ).toBeFalsy()
 
     expect(
-      E.isRight(matchRoute(userWithQuery)('/users/', 'get'))
+      E.isRight(
+        matchRoute(userWithHeaders)(
+          '/users/',
+          'get',
+          {},
+          {}
+        )
+      )
+    ).toBeFalsy()
+  })
+
+  it('userWithData endpoint', () => {
+    expect(
+      matchRoute(userWithData)(
+        '/users',
+        'post',
+        { dog: 'true' },
+        {}
+      )
+    ).toEqual(
+      E.right({
+        params: {},
+        query: {},
+        data: { dog: true },
+        headers: {},
+      })
+    )
+    expect(
+      E.isRight(
+        matchRoute(userWithData)(
+          '/users',
+          'post',
+          { sessionId: 'sdfsdf' },
+          {}
+        )
+      )
+    ).toBeFalsy()
+
+    expect(
+      E.isRight(
+        matchRoute(userWithData)(
+          '/users/',
+          'post',
+          { dog: 1 },
+          {}
+        )
+      )
     ).toBeFalsy()
   })
 })

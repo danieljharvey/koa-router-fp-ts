@@ -29,18 +29,30 @@ type Decoder<A> =
     }
   | { type: 'NoDecoder' }
 
-export type Route<Param, Query> = {
+export type Route<Param, Query, Data, Headers> = {
   method: Method
   parts: RouteItem[]
   paramDecoder: Decoder<Param>
   queryDecoder: Decoder<Query>
+  dataDecoder: Decoder<Data>
+  headersDecoder: Decoder<Headers>
 }
 
-export const combineRoutes = <ParamB, QueryB>(
-  b: Route<ParamB, QueryB>
-) => <ParamA, QueryA>(
-  a: Route<ParamA, QueryA>
-): Route<ParamA | ParamB, QueryA | QueryB> => ({
+export const combineRoutes = <
+  ParamB,
+  QueryB,
+  DataB,
+  HeadersB
+>(
+  b: Route<ParamB, QueryB, DataB, HeadersB>
+) => <ParamA, QueryA, DataA, HeadersA>(
+  a: Route<ParamA, QueryA, DataA, HeadersA>
+): Route<
+  ParamA | ParamB,
+  QueryA | QueryB,
+  DataA | DataB,
+  HeadersA | HeadersB
+> => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
   paramDecoder: combineParamDecoder(
@@ -51,48 +63,85 @@ export const combineRoutes = <ParamB, QueryB>(
     a.queryDecoder,
     b.queryDecoder
   ),
+  dataDecoder: combineParamDecoder(
+    a.dataDecoder,
+    b.dataDecoder
+  ),
+  headersDecoder: combineParamDecoder(
+    a.headersDecoder,
+    b.headersDecoder
+  ),
 })
 
-export const emptyRoute: Route<never, never> = {
+export const emptyRoute: Route<
+  never,
+  never,
+  never,
+  never
+> = {
   method: 'GET',
   parts: [],
   paramDecoder: { type: 'NoDecoder' },
   queryDecoder: { type: 'NoDecoder' },
+  dataDecoder: { type: 'NoDecoder' },
+  headersDecoder: { type: 'NoDecoder' },
 }
 
 export const getRoute = emptyRoute
 
-export const postRoute: Route<never, never> = {
+export const postRoute: Route<
+  never,
+  never,
+  never,
+  never
+> = {
   ...emptyRoute,
   method: 'POST',
 }
 
 export const literal = (
   literal: string
-): Route<never, never> => ({
+): Route<never, never, never, never> => ({
   ...emptyRoute,
   parts: [routeLiteral(literal)],
 })
 
 export const param = (
   param: string
-): Route<never, never> => ({
+): Route<never, never, never, never> => ({
   ...emptyRoute,
   parts: [routeParam(param)],
 })
 
 export const validateParams = <Param>(
   paramDecoder: t.Type<Param, unknown, unknown>
-): Route<Param, never> => ({
+): Route<Param, never, never, never> => ({
   ...emptyRoute,
   paramDecoder: { type: 'Decoder', decoder: paramDecoder },
 })
 
 export const validateQuery = <Query>(
   queryDecoder: t.Type<Query, unknown, unknown>
-): Route<never, Query> => ({
+): Route<never, Query, never, never> => ({
   ...emptyRoute,
   queryDecoder: { type: 'Decoder', decoder: queryDecoder },
+})
+
+export const validateData = <Data>(
+  dataDecoder: t.Type<Data, unknown, unknown>
+): Route<never, never, Data, never> => ({
+  ...emptyRoute,
+  dataDecoder: { type: 'Decoder', decoder: dataDecoder },
+})
+
+export const validateHeaders = <Headers>(
+  headersDecoder: t.Type<Headers, unknown, unknown>
+): Route<never, never, never, Headers> => ({
+  ...emptyRoute,
+  headersDecoder: {
+    type: 'Decoder',
+    decoder: headersDecoder,
+  },
 })
 
 const methods: Method[] = ['GET', 'POST']
@@ -189,16 +238,24 @@ type MatchError =
   | ReturnType<typeof noMatch>
   | ReturnType<typeof validationError>
 
-type MatchedRoute<Param> = {
+type MatchedRoute<Param, Query, Data, Headers> = {
   params: Param
+  query: Query
+  data: Data
+  headers: Headers
 }
 
-export const matchRoute = <Param, Query>(
-  route: Route<Param, Query>
+export const matchRoute = <Param, Query, Data, Headers>(
+  route: Route<Param, Query, Data, Headers>
 ) => (
   url: string,
-  method: string
-): E.Either<MatchError, MatchedRoute<Param>> => {
+  method: string,
+  rawData: unknown,
+  rawHeaders: Record<string, unknown>
+): E.Either<
+  MatchError,
+  MatchedRoute<Param, Query, Data, Headers>
+> => {
   const items = splitUrl(url)
   const queryParams = parseQueryParams(url)
   const pairs = A.zip(route.parts, items)
@@ -245,10 +302,34 @@ export const matchRoute = <Param, Query>(
     E.mapLeft(validationError)
   )
 
+  const dataMatches = pipe(
+    route.dataDecoder.type === 'Decoder'
+      ? route.dataDecoder.decoder.decode(rawData)
+      : E.right({} as Data),
+    E.mapLeft(validationError)
+  )
+
+  const headersMatches = pipe(
+    route.headersDecoder.type === 'Decoder'
+      ? route.headersDecoder.decoder.decode(rawHeaders)
+      : E.right({} as Headers),
+    E.mapLeft(validationError)
+  )
+
   const sequenceT = Ap.sequenceT(E.either)
   return pipe(
-    sequenceT(paramMatches, queryMatches),
-    E.map(([params, query]) => ({ params, query }))
+    sequenceT(
+      paramMatches,
+      queryMatches,
+      dataMatches,
+      headersMatches
+    ),
+    E.map(([params, query, data, headers]) => ({
+      params,
+      query,
+      data,
+      headers,
+    }))
   )
 }
 

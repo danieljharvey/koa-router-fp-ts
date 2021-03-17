@@ -13,12 +13,15 @@ import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
 import { numberDecoder } from './decoders'
 
+const bodyParser = require('koa-bodyparser')
+
 const withServer = async (
   router: Koa.Middleware,
   fn: (server: Server) => Promise<unknown>
 ) => {
   const app = new Koa.default()
 
+  app.use(bodyParser())
   app.use(router)
 
   const PORT = process.env.PORT || 3000
