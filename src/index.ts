@@ -11,6 +11,7 @@ export const router = <Param, Query, Data, Headers>(
   const url = ctx.request.url
   const method = ctx.request.method
   const headers = ctx.request.headers
+
   const data = (ctx.request as any).body
   const result = matchRoute(route)(
     url,

@@ -5,13 +5,17 @@ import {
   literal,
   combineRoutes,
   getRoute,
+  postRoute,
   param,
   validateParams,
+  validateQuery,
+  validateHeaders,
+  validateData,
 } from './Route'
 import request from 'supertest'
 import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
-import { numberDecoder } from './decoders'
+import { numberDecoder, booleanDecoder } from './decoders'
 
 const bodyParser = require('koa-bodyparser')
 
@@ -118,6 +122,67 @@ describe('Testing with koa', () => {
 
     await withServer(userId, async server => {
       await request(server).get('/user/123').expect(200)
+    })
+  })
+
+  it('Returns a 200 when the route and query params match', async () => {
+    const userId = router(
+      pipe(
+        getRoute,
+        combineRoutes(literal('user')),
+        combineRoutes(
+          validateQuery(t.type({ id: numberDecoder }))
+        )
+      )
+    )
+
+    await withServer(userId, async server => {
+      await request(server).get('/user?id=123').expect(200)
+    })
+  })
+
+  it('Returns a 200 when the route and headers match', async () => {
+    const userId = router(
+      pipe(
+        getRoute,
+        combineRoutes(literal('user')),
+        combineRoutes(
+          validateHeaders(
+            t.type({ session: numberDecoder })
+          )
+        )
+      )
+    )
+
+    await withServer(userId, async server => {
+      await request(server)
+        .get('/user')
+        .set({ session: '123' })
+        .expect(200)
+    })
+  })
+
+  it('Returns a 200 when the route and data matches', async () => {
+    const userId = router(
+      pipe(
+        postRoute,
+        combineRoutes(literal('user')),
+        combineRoutes(
+          validateData(
+            t.type({
+              sessionId: t.number,
+              dog: t.boolean,
+            })
+          )
+        )
+      )
+    )
+
+    await withServer(userId, async server => {
+      await request(server)
+        .post('/user')
+        .send({ sessionId: 123, dog: true })
+        .expect(200)
     })
   })
 })
