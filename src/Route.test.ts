@@ -37,7 +37,7 @@ const userId = pipe(
 describe('Route matching', () => {
   it('Healthz endpoint', () => {
     expect(matchRoute(healthz)('/healthz', 'get')).toEqual(
-      E.right({})
+      E.right({ params: {} })
     )
     expect(
       E.isRight(matchRoute(healthz)('/health', 'get'))
@@ -49,7 +49,7 @@ describe('Route matching', () => {
   it('Username endpoint', () => {
     expect(
       matchRoute(userName)('/user/name', 'get')
-    ).toEqual(E.right({}))
+    ).toEqual(E.right({ params: {} }))
     expect(
       E.isRight(
         matchRoute(userName)('/user/oh/name', 'get')
@@ -59,7 +59,7 @@ describe('Route matching', () => {
 
   it('userId endpoint', () => {
     expect(matchRoute(userId)('/user/123', 'get')).toEqual(
-      E.right({ id: 123 })
+      E.right({ params: { id: 123 } })
     )
     expect(
       E.isRight(matchRoute(userId)('/user/name', 'get'))

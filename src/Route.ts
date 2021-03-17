@@ -155,10 +155,14 @@ type MatchError =
   | ReturnType<typeof noMatch>
   | ReturnType<typeof validationError>
 
+type MatchedRoute<Param> = {
+  params: Param
+}
+
 export const matchRoute = <Param>(route: Route<Param>) => (
   url: string,
   method: string
-): E.Either<MatchError, Param> => {
+): E.Either<MatchError, MatchedRoute<Param>> => {
   const items = splitUrl(url)
 
   const pairs = A.zip(route.parts, items)
@@ -178,7 +182,7 @@ export const matchRoute = <Param>(route: Route<Param>) => (
     )
   }
 
-  const urlMatches = pipe(
+  const paramMatches = pipe(
     pairs,
     E.traverseArray(([routePart, urlPart]) =>
       matchRouteItem(routePart, urlPart)
@@ -188,12 +192,16 @@ export const matchRoute = <Param>(route: Route<Param>) => (
       pipe(
         route.paramDecoder.type === 'Decoder'
           ? route.paramDecoder.decoder.decode(matches)
-          : E.right(neverValue),
+          : E.right(neverValue as Param),
         E.mapLeft(validationError)
       )
     )
   )
-  return urlMatches
+
+  if (E.isLeft(paramMatches)) {
+    return paramMatches
+  }
+  return E.right({ params: paramMatches.right })
 }
 
 const neverValue = {} as any
