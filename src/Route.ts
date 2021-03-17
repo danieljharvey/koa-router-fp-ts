@@ -1,8 +1,9 @@
 // import * as t from 'io-ts'
-import * as D from 'io-ts/Decoder'
 import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
-import { pipe } from 'fp-ts/function'
+import { pipe, absurd } from 'fp-ts/function'
+import * as t from 'io-ts'
+import reporter from 'io-ts-reporters'
 
 export const routeLiteral = (literal: string) => ({
   type: 'Literal' as const,
@@ -20,15 +21,17 @@ type RouteItem =
 
 type Method = 'GET' | 'POST'
 
+type Decoder<A> =
+  | {
+      type: 'Decoder'
+      decoder: t.Type<A, unknown, unknown>
+    }
+  | { type: 'NoDecoder' }
+
 export type Route<Param> = {
   method: Method
   parts: RouteItem[]
-  paramDecoder: D.Decoder<string, Param>
-}
-
-const neverDecoder: D.Decoder<string, never> = {
-  decode: str =>
-    D.failure(str, 'This decoder always fails'),
+  paramDecoder: Decoder<Param>
 }
 
 export const combineRoutes = <ParamB>(b: Route<ParamB>) => <
@@ -38,36 +41,62 @@ export const combineRoutes = <ParamB>(b: Route<ParamB>) => <
 ): Route<ParamA | ParamB> => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
-  paramDecoder: D.union(a.paramDecoder, b.paramDecoder),
+  paramDecoder: combineParamDecoder(
+    a.paramDecoder,
+    b.paramDecoder
+  ),
 })
 
 export const emptyRoute: Route<never> = {
   method: 'GET',
   parts: [],
-  paramDecoder: neverDecoder,
+  paramDecoder: { type: 'NoDecoder' },
 }
 
 export const getRoute = emptyRoute
 
 export const postRoute: Route<never> = {
+  ...emptyRoute,
   method: 'POST',
-  parts: [],
-  paramDecoder: neverDecoder,
 }
 
 export const literal = (literal: string): Route<never> => ({
-  method: 'GET',
+  ...emptyRoute,
   parts: [routeLiteral(literal)],
-  paramDecoder: neverDecoder,
 })
 
 export const param = (param: string): Route<never> => ({
-  method: 'GET',
+  ...emptyRoute,
   parts: [routeParam(param)],
-  paramDecoder: neverDecoder,
+})
+
+export const validateParams = <Param>(
+  paramDecoder: t.Type<Param, unknown, unknown>
+): Route<Param> => ({
+  ...emptyRoute,
+  paramDecoder: { type: 'Decoder', decoder: paramDecoder },
 })
 
 const methods: Method[] = ['GET', 'POST']
+
+const combineParamDecoder = <ParamA, ParamB>(
+  a: Decoder<ParamA>,
+  b: Decoder<ParamB>
+): Decoder<ParamA | ParamB> => {
+  if (a.type !== 'Decoder' && b.type === 'Decoder') {
+    return b as Decoder<ParamA | ParamB>
+  }
+  if (a.type === 'Decoder' && b.type !== 'Decoder') {
+    return a as Decoder<ParamA | ParamB>
+  }
+  if (a.type === 'Decoder' && b.type === 'Decoder') {
+    return {
+      type: 'Decoder',
+      decoder: t.union([a.decoder, b.decoder]),
+    }
+  }
+  return { type: 'NoDecoder' }
+}
 
 const combineMethod = (a: Method, b: Method): Method => {
   const aIndex = methods.findIndex(i => i === a)
@@ -91,14 +120,16 @@ const matchMethod = (
 const matchRouteItem = (
   routeItem: RouteItem,
   urlPart: string
-): E.Either<string, Record<string, string>> => {
+): E.Either<MatchError, Record<string, string>> => {
   switch (routeItem.type) {
     case 'Literal':
       return routeItem.literal.toLowerCase() ===
         urlPart.toLowerCase()
         ? E.right({})
         : E.left(
-            `${urlPart} did not match ${routeItem.literal}`
+            noMatch(
+              `${urlPart} did not match ${routeItem.literal}`
+            )
           )
     case 'Param':
       return E.right({ [routeItem.name]: urlPart })
@@ -110,10 +141,24 @@ const flattenParams = (
 ): Record<string, string> =>
   params.reduce((all, a) => ({ ...all, ...a }), {})
 
+const noMatch = (message: string) => ({
+  type: 'NoMatchError' as const,
+  message,
+})
+
+const validationError = (errors: t.Errors) => ({
+  type: 'ValidationError' as const,
+  message: reporter.report(E.left(errors)),
+})
+
+type MatchError =
+  | ReturnType<typeof noMatch>
+  | ReturnType<typeof validationError>
+
 export const matchRoute = <Param>(route: Route<Param>) => (
   url: string,
   method: string
-): E.Either<string, Record<string, string>> => {
+): E.Either<MatchError, Param> => {
   const items = splitUrl(url)
 
   const pairs = A.zip(route.parts, items)
@@ -122,18 +167,33 @@ export const matchRoute = <Param>(route: Route<Param>) => (
     pairs.length !== route.parts.length ||
     pairs.length !== items.length
   ) {
-    return E.left('Route does not match url parts length')
+    return E.left(
+      noMatch('Route does not match url parts length')
+    )
   }
 
   if (!matchMethod(route.method, method)) {
-    return E.left(`Method does not match ${route.method}`)
+    return E.left(
+      noMatch(`Method does not match ${route.method}`)
+    )
   }
 
-  return pipe(
+  const urlMatches = pipe(
     pairs,
     E.traverseArray(([routePart, urlPart]) =>
       matchRouteItem(routePart, urlPart)
     ),
-    E.map(flattenParams)
+    E.map(flattenParams),
+    E.chainW(matches =>
+      pipe(
+        route.paramDecoder.type === 'Decoder'
+          ? route.paramDecoder.decoder.decode(matches)
+          : E.right(neverValue),
+        E.mapLeft(validationError)
+      )
+    )
   )
+  return urlMatches
 }
+
+const neverValue = {} as any

@@ -2,13 +2,16 @@ import * as Koa from 'koa'
 import { Server } from 'http'
 import { router } from './index'
 import {
-  routeLiteral,
   literal,
   combineRoutes,
   getRoute,
+  param,
+  validateParams,
 } from './Route'
 import request from 'supertest'
 import { pipe } from 'fp-ts/function'
+import * as t from 'io-ts'
+import { numberDecoder } from './decoders'
 
 const withServer = async (
   router: Koa.Middleware,
@@ -73,6 +76,28 @@ describe('Testing with koa', () => {
 
       expect(reply.status).toEqual(200)
       expect(reply.text).toEqual('Found')
+    })
+  })
+
+  it("Returns a 400 when the route matches but the params don't validate", async () => {
+    const userId = router(
+      pipe(
+        getRoute,
+        combineRoutes(literal('user')),
+        combineRoutes(param('id')),
+        combineRoutes(
+          validateParams(t.type({ id: numberDecoder }))
+        )
+      )
+    )
+
+    await withServer(userId, async server => {
+      const reply = await request(server)
+        .get('/user/dog')
+        .expect(400)
+      expect(reply.text).toContain(
+        'Expecting NumberFromString'
+      )
     })
   })
 })

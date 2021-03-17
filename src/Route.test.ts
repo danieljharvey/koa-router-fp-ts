@@ -7,9 +7,12 @@ import {
   getRoute,
   literal,
   param,
+  validateParams,
 } from './Route'
 import * as E from 'fp-ts/Either'
 import { pipe } from 'fp-ts/function'
+import * as t from 'io-ts'
+import { numberDecoder } from './decoders'
 
 const healthz = pipe(
   getRoute,
@@ -25,9 +28,11 @@ const userName = pipe(
 const userId = pipe(
   getRoute,
   combineRoutes(literal('user')),
-  combineRoutes(param('id'))
+  combineRoutes(param('id')),
+  combineRoutes(
+    validateParams(t.type({ id: numberDecoder }))
+  )
 )
-console.log(userId)
 
 describe('Route matching', () => {
   it('Healthz endpoint', () => {
@@ -53,12 +58,13 @@ describe('Route matching', () => {
   })
 
   it('userId endpoint', () => {
-    expect(matchRoute(userId)('/user/name', 'get')).toEqual(
-      E.right({ id: 'name' })
-    )
     expect(matchRoute(userId)('/user/123', 'get')).toEqual(
-      E.right({ id: '123' })
+      E.right({ id: 123 })
     )
+    expect(
+      E.isRight(matchRoute(userId)('/user/name', 'get'))
+    ).toBeFalsy()
+
     expect(
       E.isRight(matchRoute(userId)('/user/oh/name', 'get'))
     ).toBeFalsy()
