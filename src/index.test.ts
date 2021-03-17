@@ -114,9 +114,7 @@ describe('Testing with koa', () => {
     )
 
     await withServer(userId, async server => {
-      const reply = await request(server)
-        .get('/user/123')
-        .expect(200)
+      await request(server).get('/user/123').expect(200)
     })
   })
 })
