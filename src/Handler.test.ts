@@ -18,10 +18,10 @@ import { numberDecoder } from './decoders'
 describe('Test the goddamn handlers', () => {
   it('Uses the healthz handler successfully', async () => {
     const healthz: RouteWithHandler<
-      never,
-      never,
-      never,
-      never,
+      {},
+      {},
+      {},
+      {},
       { code: 200; data: string }
     > = {
       route: pipe(
@@ -60,9 +60,9 @@ describe('Test the goddamn handlers', () => {
 
     const dogAgesHandler: RouteWithHandler<
       DogAge,
-      never,
-      never,
-      never,
+      {},
+      {},
+      {},
       | { code: 200; data: string[] }
       | { code: 400; data: string }
     > = {

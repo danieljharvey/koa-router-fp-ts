@@ -29,7 +29,12 @@ type Decoder<A> =
     }
   | { type: 'NoDecoder' }
 
-export type Route<Param, Query, Data, Headers> = {
+export type Route<
+  Param = {},
+  Query = {},
+  Data = {},
+  Headers = {}
+> = {
   method: Method
   parts: RouteItem[]
   paramDecoder: Decoder<Param>
@@ -39,19 +44,24 @@ export type Route<Param, Query, Data, Headers> = {
 }
 
 export const combineRoutes = <
-  ParamB,
-  QueryB,
-  DataB,
-  HeadersB
+  ParamB extends GenericRec,
+  QueryB extends GenericRec,
+  DataB extends GenericRec,
+  HeadersB extends GenericRec
 >(
   b: Route<ParamB, QueryB, DataB, HeadersB>
-) => <ParamA, QueryA, DataA, HeadersA>(
+) => <
+  ParamA extends GenericRec,
+  QueryA extends GenericRec,
+  DataA extends GenericRec,
+  HeadersA extends GenericRec
+>(
   a: Route<ParamA, QueryA, DataA, HeadersA>
 ): Route<
-  ParamA | ParamB,
-  QueryA | QueryB,
-  DataA | DataB,
-  HeadersA | HeadersB
+  ParamA & ParamB,
+  QueryA & QueryB,
+  DataA & DataB,
+  HeadersA & HeadersB
 > => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
@@ -73,12 +83,7 @@ export const combineRoutes = <
   ),
 })
 
-export const emptyRoute: Route<
-  never,
-  never,
-  never,
-  never
-> = {
+export const emptyRoute: Route<{}, {}, {}, {}> = {
   method: 'GET',
   parts: [],
   paramDecoder: { type: 'NoDecoder' },
@@ -89,54 +94,45 @@ export const emptyRoute: Route<
 
 export const getRoute = emptyRoute
 
-export const postRoute: Route<
-  never,
-  never,
-  never,
-  never
-> = {
+export const postRoute: Route = {
   ...emptyRoute,
   method: 'POST',
 }
 
-export const literal = (
-  literal: string
-): Route<never, never, never, never> => ({
+export const literal = (literal: string): Route => ({
   ...emptyRoute,
   parts: [routeLiteral(literal)],
 })
 
-export const param = (
-  param: string
-): Route<never, never, never, never> => ({
+export const param = (param: string): Route => ({
   ...emptyRoute,
   parts: [routeParam(param)],
 })
 
 export const validateParams = <Param>(
   paramDecoder: t.Type<Param, unknown, unknown>
-): Route<Param, never, never, never> => ({
+): Route<Param> => ({
   ...emptyRoute,
   paramDecoder: { type: 'Decoder', decoder: paramDecoder },
 })
 
 export const validateQuery = <Query>(
   queryDecoder: t.Type<Query, unknown, unknown>
-): Route<never, Query, never, never> => ({
+): Route<{}, Query> => ({
   ...emptyRoute,
   queryDecoder: { type: 'Decoder', decoder: queryDecoder },
 })
 
 export const validateData = <Data>(
   dataDecoder: t.Type<Data, unknown, unknown>
-): Route<never, never, Data, never> => ({
+): Route<{}, {}, Data> => ({
   ...emptyRoute,
   dataDecoder: { type: 'Decoder', decoder: dataDecoder },
 })
 
 export const validateHeaders = <Headers>(
   headersDecoder: t.Type<Headers, unknown, unknown>
-): Route<never, never, never, Headers> => ({
+): Route<{}, {}, {}, Headers> => ({
   ...emptyRoute,
   headersDecoder: {
     type: 'Decoder',
@@ -146,20 +142,25 @@ export const validateHeaders = <Headers>(
 
 const methods: Method[] = ['GET', 'POST']
 
-const combineParamDecoder = <ParamA, ParamB>(
+type GenericRec = Record<string, unknown>
+
+const combineParamDecoder = <
+  ParamA extends GenericRec,
+  ParamB extends GenericRec
+>(
   a: Decoder<ParamA>,
   b: Decoder<ParamB>
-): Decoder<ParamA | ParamB> => {
+): Decoder<ParamA & ParamB> => {
   if (a.type !== 'Decoder' && b.type === 'Decoder') {
-    return b as Decoder<ParamA | ParamB>
+    return b as Decoder<ParamA & ParamB>
   }
   if (a.type === 'Decoder' && b.type !== 'Decoder') {
-    return a as Decoder<ParamA | ParamB>
+    return a as Decoder<ParamA & ParamB>
   }
   if (a.type === 'Decoder' && b.type === 'Decoder') {
     return {
       type: 'Decoder',
-      decoder: t.union([a.decoder, b.decoder]),
+      decoder: t.intersection([a.decoder, b.decoder]),
     }
   }
   return { type: 'NoDecoder' }
