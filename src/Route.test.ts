@@ -1,7 +1,4 @@
 import {
-  Route,
-  routeLiteral,
-  routeParam,
   matchRoute,
   combineRoutes,
   getRoute,
@@ -67,7 +64,12 @@ const userWithData = pipe(
 describe('Route matching', () => {
   it('Healthz endpoint', () => {
     expect(
-      matchRoute(healthz)('/healthz', 'get', {}, {})
+      matchRoute(healthz)({
+        url: '/healthz',
+        method: 'get',
+        rawData: {},
+        rawHeaders: {},
+      })
     ).toEqual(
       E.right({
         params: {},
@@ -78,18 +80,33 @@ describe('Route matching', () => {
     )
     expect(
       E.isRight(
-        matchRoute(healthz)('/health', 'get', {}, {})
+        matchRoute(healthz)({
+          url: '/health',
+          method: 'get',
+          rawData: {},
+          rawHeaders: {},
+        })
       )
     ).toBeFalsy()
     expect(
       E.isRight(
-        matchRoute(healthz)('/healthz', 'post', {}, {})
+        matchRoute(healthz)({
+          url: '/healthz',
+          method: 'post',
+          rawData: {},
+          rawHeaders: {},
+        })
       )
     ).toBeFalsy()
   })
   it('Username endpoint', () => {
     expect(
-      matchRoute(userName)('/user/name', 'get', {}, {})
+      matchRoute(userName)({
+        url: '/user/name',
+        method: 'get',
+        rawData: {},
+        rawHeaders: {},
+      })
     ).toEqual(
       E.right({
         params: {},
@@ -100,14 +117,24 @@ describe('Route matching', () => {
     )
     expect(
       E.isRight(
-        matchRoute(userName)('/user/oh/name', 'get', {}, {})
+        matchRoute(userName)({
+          url: '/user/oh/name',
+          method: 'get',
+          rawData: {},
+          rawHeaders: {},
+        })
       )
     ).toBeFalsy()
   })
 
   it('userId endpoint', () => {
     expect(
-      matchRoute(userId)('/user/123', 'get', {}, {})
+      matchRoute(userId)({
+        url: '/user/123',
+        method: 'get',
+        rawData: {},
+        rawHeaders: {},
+      })
     ).toEqual(
       E.right({
         params: { id: 123 },
@@ -118,25 +145,35 @@ describe('Route matching', () => {
     )
     expect(
       E.isRight(
-        matchRoute(userId)('/user/name', 'get', {}, {})
+        matchRoute(userId)({
+          url: '/user/name',
+          method: 'get',
+          rawData: {},
+          rawHeaders: {},
+        })
       )
     ).toBeFalsy()
 
     expect(
       E.isRight(
-        matchRoute(userId)('/user/oh/name', 'get', {}, {})
+        matchRoute(userId)({
+          url: '/user/oh/name',
+          method: 'get',
+          rawData: {},
+          rawHeaders: {},
+        })
       )
     ).toBeFalsy()
   })
 
   it('userWithHeaders endpoint', () => {
     expect(
-      matchRoute(userWithHeaders)(
-        '/users',
-        'get',
-        {},
-        { sessionId: '123' }
-      )
+      matchRoute(userWithHeaders)({
+        url: '/users',
+        method: 'get',
+        rawData: {},
+        rawHeaders: { sessionId: '123' },
+      })
     ).toEqual(
       E.right({
         params: {},
@@ -147,35 +184,35 @@ describe('Route matching', () => {
     )
     expect(
       E.isRight(
-        matchRoute(userWithHeaders)(
-          '/users',
-          'get',
-          {},
-          { sessionId: 'sdfsdf' }
-        )
+        matchRoute(userWithHeaders)({
+          url: '/users',
+          method: 'get',
+          rawData: {},
+          rawHeaders: { sessionId: 'sdfsdf' },
+        })
       )
     ).toBeFalsy()
 
     expect(
       E.isRight(
-        matchRoute(userWithHeaders)(
-          '/users/',
-          'get',
-          {},
-          {}
-        )
+        matchRoute(userWithHeaders)({
+          url: '/users/',
+          method: 'get',
+          rawData: {},
+          rawHeaders: {},
+        })
       )
     ).toBeFalsy()
   })
 
   it('userWithData endpoint', () => {
     expect(
-      matchRoute(userWithData)(
-        '/users',
-        'post',
-        { dog: 'true' },
-        {}
-      )
+      matchRoute(userWithData)({
+        url: '/users',
+        method: 'post',
+        rawData: { dog: 'true' },
+        rawHeaders: {},
+      })
     ).toEqual(
       E.right({
         params: {},
@@ -186,23 +223,23 @@ describe('Route matching', () => {
     )
     expect(
       E.isRight(
-        matchRoute(userWithData)(
-          '/users',
-          'post',
-          { sessionId: 'sdfsdf' },
-          {}
-        )
+        matchRoute(userWithData)({
+          url: '/users',
+          method: 'post',
+          rawData: { sessionId: 'sdfsdf' },
+          rawHeaders: {},
+        })
       )
     ).toBeFalsy()
 
     expect(
       E.isRight(
-        matchRoute(userWithData)(
-          '/users/',
-          'post',
-          { dog: 1 },
-          {}
-        )
+        matchRoute(userWithData)({
+          url: '/users/',
+          method: 'post',
+          rawData: { dog: 1 },
+          rawHeaders: {},
+        })
       )
     ).toBeFalsy()
   })

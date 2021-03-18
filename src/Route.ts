@@ -166,8 +166,8 @@ const combineParamDecoder = <ParamA, ParamB>(
 }
 
 const combineMethod = (a: Method, b: Method): Method => {
-  const aIndex = methods.findIndex(i => i === a)
-  const bIndex = methods.findIndex(i => i === b)
+  const aIndex = methods.findIndex((i) => i === a)
+  const bIndex = methods.findIndex((i) => i === b)
 
   if (aIndex === -1 && bIndex === -1) {
     return 'GET'
@@ -178,7 +178,7 @@ const combineMethod = (a: Method, b: Method): Method => {
 
 const splitUrl = (whole: string): string[] => {
   const pt1 = whole.split('?')[0]
-  return pt1.split('/').filter(a => a.length > 0)
+  return pt1.split('/').filter((a) => a.length > 0)
 }
 
 const parseQueryParams = (
@@ -188,7 +188,7 @@ const parseQueryParams = (
   if (!end) {
     return {}
   }
-  const as = end.split('&').map(a => a.split('='))
+  const as = end.split('&').map((a) => a.split('='))
 
   return flattenParams(
     as.map(([key, val]) => ({ [key]: val }))
@@ -234,25 +234,32 @@ const validationError = (errors: t.Errors) => ({
   message: reporter.report(E.left(errors)),
 })
 
-type MatchError =
+export type MatchError =
   | ReturnType<typeof noMatch>
   | ReturnType<typeof validationError>
 
-type MatchedRoute<Param, Query, Data, Headers> = {
+export type MatchedRoute<Param, Query, Data, Headers> = {
   params: Param
   query: Query
   data: Data
   headers: Headers
 }
 
+export type MatchInputs = {
+  url: string
+  method: string
+  rawData: unknown
+  rawHeaders: Record<string, unknown>
+}
+
 export const matchRoute = <Param, Query, Data, Headers>(
   route: Route<Param, Query, Data, Headers>
-) => (
-  url: string,
-  method: string,
-  rawData: unknown,
-  rawHeaders: Record<string, unknown>
-): E.Either<
+) => ({
+  url,
+  method,
+  rawData,
+  rawHeaders,
+}: MatchInputs): E.Either<
   MatchError,
   MatchedRoute<Param, Query, Data, Headers>
 > => {
@@ -285,7 +292,7 @@ export const matchRoute = <Param, Query, Data, Headers>(
 
   const paramMatches = pipe(
     params,
-    E.chainW(matches =>
+    E.chainW((matches) =>
       pipe(
         route.paramDecoder.type === 'Decoder'
           ? route.paramDecoder.decoder.decode(matches)

@@ -10,15 +10,15 @@ export const router = <Param, Query, Data, Headers>(
 ) => {
   const url = ctx.request.url
   const method = ctx.request.method
-  const headers = ctx.request.headers
+  const rawHeaders = ctx.request.headers
+  const rawData = (ctx.request as any).body
 
-  const data = (ctx.request as any).body
-  const result = matchRoute(route)(
+  const result = matchRoute(route)({
     url,
     method,
-    data,
-    headers
-  )
+    rawData,
+    rawHeaders,
+  })
 
   if (E.isRight(result)) {
     ctx.response.status = 200
