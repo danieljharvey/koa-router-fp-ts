@@ -45,7 +45,7 @@ export type Route<
   headersDecoder: Decoder<Headers>
 }
 
-type CombineFn<
+type CombineRoute<
   ParamB extends GenericRec = {},
   QueryB extends GenericRec = {},
   DataB extends GenericRec = {},
@@ -71,7 +71,9 @@ export const combineRoutes = <
   HeadersB extends GenericRec
 >(
   b: Route<ParamB, QueryB, DataB, HeadersB>
-): CombineFn<ParamB, QueryB, DataB, HeadersB> => (a) => ({
+): CombineRoute<ParamB, QueryB, DataB, HeadersB> => (
+  a
+) => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
   paramDecoder: combineParamDecoder(
@@ -119,7 +121,7 @@ export const lit = (lit: string) =>
 export const param = <ParamName extends string, Param>(
   param: ParamName,
   decoder: t.Type<Param, unknown, unknown>
-): CombineFn<Record<ParamName, Param>> =>
+): CombineRoute<Record<ParamName, Param>> =>
   flow(combineRoutes(parameter(param, decoder)))
 
 const parameter = <ParamName extends string, Param>(
