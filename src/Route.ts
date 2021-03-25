@@ -45,6 +45,25 @@ export type Route<
   headersDecoder: Decoder<Headers>
 }
 
+type CombineRoute<
+  ParamB extends GenericRec = {},
+  QueryB extends GenericRec = {},
+  DataB extends GenericRec = {},
+  HeadersB extends GenericRec = {}
+> = <
+  ParamA extends GenericRec = {},
+  QueryA extends GenericRec = {},
+  DataA extends GenericRec = {},
+  HeadersA extends GenericRec = {}
+>(
+  route: Route<ParamA, QueryA, DataA, HeadersA>
+) => Route<
+  ParamA & ParamB,
+  QueryA & QueryB,
+  DataA & DataB,
+  HeadersA & HeadersB
+>
+
 export const combineRoutes = <
   ParamB extends GenericRec,
   QueryB extends GenericRec,
@@ -52,19 +71,9 @@ export const combineRoutes = <
   HeadersB extends GenericRec
 >(
   b: Route<ParamB, QueryB, DataB, HeadersB>
-) => <
-  ParamA extends GenericRec,
-  QueryA extends GenericRec,
-  DataA extends GenericRec,
-  HeadersA extends GenericRec
->(
-  a: Route<ParamA, QueryA, DataA, HeadersA>
-): Route<
-  ParamA & ParamB,
-  QueryA & QueryB,
-  DataA & DataB,
-  HeadersA & HeadersB
-> => ({
+): CombineRoute<ParamB, QueryB, DataB, HeadersB> => (
+  a
+) => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
   paramDecoder: combineParamDecoder(
@@ -112,19 +121,8 @@ export const lit = (lit: string) =>
 export const param = <ParamName extends string, Param>(
   param: ParamName,
   decoder: t.Type<Param, unknown, unknown>
-): (<
-  ParamA extends GenericRec,
-  QueryA extends GenericRec,
-  DataA extends GenericRec,
-  HeadersA extends GenericRec
->(
-  route: Route<ParamA, QueryA, DataA, HeadersA>
-) => Route<
-  ParamA & Record<ParamName, Param>,
-  QueryA,
-  DataA,
-  HeadersA
->) => flow(combineRoutes(parameter(param, decoder)))
+): CombineRoute<Record<ParamName, Param>> =>
+  flow(combineRoutes(parameter(param, decoder)))
 
 const parameter = <ParamName extends string, Param>(
   param: ParamName,
@@ -134,11 +132,9 @@ const parameter = <ParamName extends string, Param>(
   parts: [routeParam(param)],
   paramDecoder: {
     type: 'Decoder',
-    decoder: (t.type({
+    decoder: t.type({
       [param]: decoder,
-    }) as unknown) as t.TypeC<
-      Record<ParamName, t.Type<Param, unknown, unknown>>
-    >,
+    } as Record<ParamName, t.Type<Param, unknown, unknown>>),
   },
 })
 
