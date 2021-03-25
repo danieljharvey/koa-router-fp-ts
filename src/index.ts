@@ -1,9 +1,25 @@
 import * as Koa from 'koa'
 import { Route, matchRoute } from './Route'
+import {
+  RouteWithHandler,
+  runRouteWithHandler,
+} from './Handler'
 import * as E from 'fp-ts/Either'
 
-export const router = <Param, Query, Data, Headers>(
-  route: Route<Param, Query, Data, Headers>
+export const router = <
+  Param,
+  Query,
+  Data,
+  Headers,
+  ReturnType extends { code: number; data: unknown }
+>(
+  routeWithHandler: RouteWithHandler<
+    Param,
+    Query,
+    Data,
+    Headers,
+    ReturnType
+  >
 ) => async (
   ctx: Koa.Context,
   _next: () => Promise<unknown>
@@ -13,12 +29,14 @@ export const router = <Param, Query, Data, Headers>(
   const rawHeaders = ctx.request.headers
   const rawData = (ctx.request as any).body
 
-  const result = matchRoute(route)({
+  const result = await runRouteWithHandler(
+    routeWithHandler
+  )({
     url,
     method,
     rawData,
     rawHeaders,
-  })
+  })()
 
   if (E.isRight(result)) {
     ctx.response.status = 200
