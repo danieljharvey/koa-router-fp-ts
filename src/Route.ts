@@ -125,18 +125,16 @@ export const param = <ParamName extends string, Param>(
 const parameter = <ParamName extends string, Param>(
   param: ParamName,
   decoder: t.Type<Param, unknown, unknown>
-): Route<Record<ParamName, Param>> => {
-  return {
-    ...emptyRoute,
-    parts: [routeParam(param)],
-    paramDecoder: {
-      type: 'Decoder',
-      decoder: t.type({
-        [param]: decoder,
-      } as Record<ParamName, t.Type<Param, unknown, unknown>>),
-    },
-  }
-}
+): Route<Record<ParamName, Param>> => ({
+  ...emptyRoute,
+  parts: [routeParam(param)],
+  paramDecoder: {
+    type: 'Decoder',
+    decoder: t.type({
+      [param]: decoder,
+    } as Record<ParamName, t.Type<Param, unknown, unknown>>),
+  },
+})
 
 export const validateParams = <Param>(
   paramDecoder: t.Type<Param, unknown, unknown>
