@@ -39,3 +39,6 @@ jobs:
 
       - name: Build shit
         run: yarn tsc
+
+      - name: Run tests
+        run: yarn test
