@@ -35,6 +35,7 @@
   },
   "scripts": {
     "start": "ts-node src/index.ts",
+    "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watchAll",
     "typescript:watch": "tsc --noEmit --watch"
