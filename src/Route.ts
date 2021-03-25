@@ -1,10 +1,12 @@
 // import * as t from 'io-ts'
 import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
-import { pipe } from 'fp-ts/function'
+import { flow, pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
 import reporter from 'io-ts-reporters'
 import * as Ap from 'fp-ts/Apply'
+import { numberDecoder } from './decoders'
+import { formatWithCursor } from 'prettier'
 
 export const routeLiteral = (literal: string) => ({
   type: 'Literal' as const,
@@ -99,14 +101,45 @@ export const postRoute: Route = {
   method: 'POST',
 }
 
-export const literal = (literal: string): Route => ({
+const literal = (literal: string): Route => ({
   ...emptyRoute,
   parts: [routeLiteral(literal)],
 })
 
-export const param = (param: string): Route => ({
+export const lit = (lit: string) =>
+  flow(combineRoutes(literal(lit)))
+
+export const param = <ParamName extends string, Param>(
+  param: ParamName,
+  decoder: t.Type<Param, unknown, unknown>
+): (<
+  ParamA extends GenericRec,
+  QueryA extends GenericRec,
+  DataA extends GenericRec,
+  HeadersA extends GenericRec
+>(
+  route: Route<ParamA, QueryA, DataA, HeadersA>
+) => Route<
+  ParamA & Record<ParamName, Param>,
+  QueryA,
+  DataA,
+  HeadersA
+>) => flow(combineRoutes(parameter(param, decoder)))
+
+const parameter = <ParamName extends string, Param>(
+  param: ParamName,
+  decoder: t.Type<Param, unknown, unknown>
+): Route<Record<ParamName, Param>> => ({
   ...emptyRoute,
   parts: [routeParam(param)],
+  paramDecoder: {
+    type: 'Decoder',
+    decoder: (t.type({
+      [param]: decoder,
+    }) as unknown) as t.TypeC<
+      Record<ParamName, t.Type<Param, unknown, unknown>>
+    >,
+  },
 })
 
 export const validateParams = <Param>(

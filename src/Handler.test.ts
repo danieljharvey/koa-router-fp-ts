@@ -1,6 +1,7 @@
 import {
   RouteWithHandler,
   runRouteWithHandler,
+  routeWithHandler,
 } from './Handler'
 import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
@@ -8,30 +9,20 @@ import * as E from 'fp-ts/Either'
 import {
   getRoute,
   combineRoutes,
-  literal,
+  lit,
   param,
-  validateParams,
 } from './Route'
 import { pipe } from 'fp-ts/lib/function'
 import { numberDecoder } from './decoders'
 
 describe('Test the goddamn handlers', () => {
   it('Uses the healthz handler successfully', async () => {
-    const healthz: RouteWithHandler<
-      {},
-      {},
-      {},
-      {},
-      { code: 200; data: string }
-    > = {
-      route: pipe(
-        getRoute,
-        combineRoutes(literal('healthz'))
-      ),
-      handler: () => {
+    const healthz = routeWithHandler(
+      pipe(getRoute, lit('healthz')),
+      () => {
         return T.of({ code: 200, data: 'OK' })
-      },
-    }
+      }
+    )
 
     const result = await runRouteWithHandler(healthz)({
       url: '/healthz',
@@ -52,27 +43,17 @@ describe('Test the goddamn handlers', () => {
       horse: 23,
     }
 
-    const dogAgeValidator = t.type({
-      age: numberDecoder,
-    })
-
-    type DogAge = t.TypeOf<typeof dogAgeValidator>
-
-    const dogAgesHandler: RouteWithHandler<
-      DogAge,
-      {},
-      {},
-      {},
+    type DogReturn =
       | { code: 200; data: string[] }
       | { code: 400; data: string }
-    > = {
-      route: pipe(
+
+    const dogAgesHandler = routeWithHandler(
+      pipe(
         getRoute,
-        combineRoutes(literal('dogs')),
-        combineRoutes(param('age')),
-        combineRoutes(validateParams(dogAgeValidator))
+        lit('dogs'),
+        param('age', numberDecoder)
       ),
-      handler: ({ params: { age } }) => {
+      ({ params: { age } }) => {
         const matchingDogs = Object.entries(dogAges).filter(
           ([_, dogAge]) => dogAge === age
         )
@@ -80,10 +61,13 @@ describe('Test the goddamn handlers', () => {
           ? T.of({
               code: 200,
               data: matchingDogs.map(([name]) => name),
-            })
-          : T.of({ code: 400, data: 'No dogs found' })
-      },
-    }
+            } as DogReturn)
+          : T.of({
+              code: 400,
+              data: 'No dogs found',
+            } as DogReturn)
+      }
+    )
 
     const result = await runRouteWithHandler(
       dogAgesHandler

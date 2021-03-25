@@ -3,9 +3,8 @@ import {
   combineRoutes,
   getRoute,
   postRoute,
-  literal,
+  lit,
   param,
-  validateParams,
   validateQuery,
   validateData,
   validateHeaders,
@@ -15,29 +14,19 @@ import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
 import { numberDecoder, booleanDecoder } from './decoders'
 
-const healthz = pipe(
-  getRoute,
-  combineRoutes(literal('healthz'))
-)
+const healthz = pipe(getRoute, lit('healthz'))
 
-const userName = pipe(
-  getRoute,
-  combineRoutes(literal('user')),
-  combineRoutes(literal('name'))
-)
+const userName = pipe(getRoute, lit('user'), lit('name'))
 
 const userId = pipe(
   getRoute,
-  combineRoutes(literal('user')),
-  combineRoutes(param('id')),
-  combineRoutes(
-    validateParams(t.type({ id: numberDecoder }))
-  )
+  lit('user'),
+  param('id', numberDecoder)
 )
 
 const userWithQuery = pipe(
   getRoute,
-  combineRoutes(literal('users')),
+  lit('users'),
   combineRoutes(
     validateQuery(
       t.type({ id: numberDecoder, flag: booleanDecoder })
@@ -47,7 +36,7 @@ const userWithQuery = pipe(
 
 const userWithHeaders = pipe(
   getRoute,
-  combineRoutes(literal('users')),
+  lit('users'),
   combineRoutes(
     validateHeaders(t.type({ sessionId: numberDecoder }))
   )
@@ -55,7 +44,7 @@ const userWithHeaders = pipe(
 
 const userWithData = pipe(
   postRoute,
-  combineRoutes(literal('users')),
+  lit('users'),
   combineRoutes(
     validateData(t.type({ dog: booleanDecoder }))
   )

@@ -2,12 +2,11 @@ import * as Koa from 'koa'
 import { Server } from 'http'
 import { router } from './index'
 import {
-  literal,
+  lit,
   combineRoutes,
   getRoute,
   postRoute,
   param,
-  validateParams,
   validateQuery,
   validateHeaders,
   validateData,
@@ -15,7 +14,7 @@ import {
 import request from 'supertest'
 import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
-import { numberDecoder, booleanDecoder } from './decoders'
+import { numberDecoder } from './decoders'
 
 const bodyParser = require('koa-bodyparser')
 
@@ -44,11 +43,9 @@ const withServer = async (
 
 describe('Testing with koa', () => {
   it('Returns a 404 when no routes are found', async () => {
-    const healthz = router(
-      pipe(getRoute, combineRoutes(literal('healthz')))
-    )
+    const healthz = router(pipe(getRoute, lit('healthz')))
 
-    await withServer(healthz, async server => {
+    await withServer(healthz, async (server) => {
       const reply = await request(server)
         .get('/')
         .expect(404)
@@ -58,11 +55,9 @@ describe('Testing with koa', () => {
   })
 
   it('Returns a 404 when method does not match for healthz route', async () => {
-    const healthz = router(
-      pipe(getRoute, combineRoutes(literal('healthz')))
-    )
+    const healthz = router(pipe(getRoute, lit('healthz')))
 
-    await withServer(healthz, async server => {
+    await withServer(healthz, async (server) => {
       const reply = await request(server)
         .post('/healthz')
         .expect(404)
@@ -72,11 +67,9 @@ describe('Testing with koa', () => {
   })
 
   it('Returns a 200 when healthz route is found', async () => {
-    const healthz = router(
-      pipe(getRoute, combineRoutes(literal('healthz')))
-    )
+    const healthz = router(pipe(getRoute, lit('healthz')))
 
-    await withServer(healthz, async server => {
+    await withServer(healthz, async (server) => {
       const reply = await request(server)
         .get('/healthz')
         .expect(200)
@@ -90,15 +83,12 @@ describe('Testing with koa', () => {
     const userId = router(
       pipe(
         getRoute,
-        combineRoutes(literal('user')),
-        combineRoutes(param('id')),
-        combineRoutes(
-          validateParams(t.type({ id: numberDecoder }))
-        )
+        lit('user'),
+        param('id', numberDecoder)
       )
     )
 
-    await withServer(userId, async server => {
+    await withServer(userId, async (server) => {
       const reply = await request(server)
         .get('/user/dog')
         .expect(400)
@@ -112,15 +102,12 @@ describe('Testing with koa', () => {
     const userId = router(
       pipe(
         getRoute,
-        combineRoutes(literal('user')),
-        combineRoutes(param('id')),
-        combineRoutes(
-          validateParams(t.type({ id: numberDecoder }))
-        )
+        lit('user'),
+        param('id', numberDecoder)
       )
     )
 
-    await withServer(userId, async server => {
+    await withServer(userId, async (server) => {
       await request(server).get('/user/123').expect(200)
     })
   })
@@ -129,14 +116,14 @@ describe('Testing with koa', () => {
     const userId = router(
       pipe(
         getRoute,
-        combineRoutes(literal('user')),
+        lit('user'),
         combineRoutes(
           validateQuery(t.type({ id: numberDecoder }))
         )
       )
     )
 
-    await withServer(userId, async server => {
+    await withServer(userId, async (server) => {
       await request(server).get('/user?id=123').expect(200)
     })
   })
@@ -145,7 +132,7 @@ describe('Testing with koa', () => {
     const userId = router(
       pipe(
         getRoute,
-        combineRoutes(literal('user')),
+        lit('user'),
         combineRoutes(
           validateHeaders(
             t.type({ session: numberDecoder })
@@ -154,7 +141,7 @@ describe('Testing with koa', () => {
       )
     )
 
-    await withServer(userId, async server => {
+    await withServer(userId, async (server) => {
       await request(server)
         .get('/user')
         .set({ session: '123' })
@@ -166,7 +153,7 @@ describe('Testing with koa', () => {
     const userId = router(
       pipe(
         postRoute,
-        combineRoutes(literal('user')),
+        lit('user'),
         combineRoutes(
           validateData(
             t.type({
@@ -178,7 +165,7 @@ describe('Testing with koa', () => {
       )
     )
 
-    await withServer(userId, async server => {
+    await withServer(userId, async (server) => {
       await request(server)
         .post('/user')
         .send({ sessionId: 123, dog: true })

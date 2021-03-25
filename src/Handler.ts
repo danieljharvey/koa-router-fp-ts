@@ -4,6 +4,7 @@ import {
   MatchInputs,
   matchRoute,
   MatchError,
+  param,
 } from './Route'
 import * as T from 'fp-ts/Task'
 import * as TE from 'fp-ts/TaskEither'
@@ -26,9 +27,31 @@ export type RouteWithHandler<
   Headers,
   ReturnType extends { code: number; data: unknown }
 > = {
+  type: 'RouteWithHandler'
   route: Route<Param, Query, Data, Headers>
   handler: Handler<Param, Query, Data, Headers, ReturnType>
 }
+
+export const routeWithHandler = <
+  Param,
+  Query,
+  Data,
+  Headers,
+  ReturnType extends { code: number; data: unknown }
+>(
+  route: Route<Param, Query, Data, Headers>,
+  handler: Handler<Param, Query, Data, Headers, ReturnType>
+): RouteWithHandler<
+  Param,
+  Query,
+  Data,
+  Headers,
+  ReturnType
+> => ({
+  type: 'RouteWithHandler',
+  route,
+  handler,
+})
 
 export const runRouteWithHandler = <
   Param,
