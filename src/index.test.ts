@@ -17,7 +17,7 @@ import * as t from 'io-ts'
 import { numberDecoder } from './decoders'
 import * as T from 'fp-ts/Task'
 import bodyParser from 'koa-bodyparser'
-import { routeWithHandler } from './Handler'
+import { routeWithHandler, response } from './Handler'
 
 const withServer = async (
   router: Koa.Middleware,
@@ -42,9 +42,15 @@ const withServer = async (
   }
 }
 
+const responseD = t.type({
+  code: t.literal(200),
+  data: t.literal('OK'),
+})
+
 const healthz = routeWithHandler(
   pipe(getRoute, lit('healthz')),
-  () => T.of({ code: 200, data: 'OK' })
+  responseD,
+  () => T.of(response(200, 'OK' as const)),
 )
 
 describe('Testing with koa', () => {
@@ -81,7 +87,8 @@ describe('Testing with koa', () => {
 
   const userId = routeWithHandler(
     pipe(getRoute, lit('user'), param('id', numberDecoder)),
-    ({ params: { id } }) => T.of({ code: 200, data: id })
+    t.type({ code: t.literal(200), data: t.number }),
+    ({ params: { id } }) => T.of(response(200, id)),
   )
 
   it("Returns a 400 when the route matches but the params don't validate", async () => {
@@ -109,7 +116,8 @@ describe('Testing with koa', () => {
         validateQuery(t.type({ id: numberDecoder }))
       )
     ),
-    ({ query: { id } }) => T.of({ code: 200, data: id })
+    t.type({ code: t.literal(200), data: t.number }),
+    ({ query: { id } }) => T.of(response(200, id)),
   )
 
   it('Returns a 200 when the route and query params match', async () => {
@@ -126,9 +134,10 @@ describe('Testing with koa', () => {
         validateHeaders(t.type({ session: numberDecoder }))
       )
     ),
+    t.type({ code: t.literal(200), data: t.number }),
     ({ headers: { session } }) =>
-      T.of({ code: 200, data: session })
-  )
+      T.of(response(200, session))
+      )
 
   it('Returns a 200 when the route and headers match', async () => {
     await withServer(router(userHeader), async server => {
@@ -152,8 +161,9 @@ describe('Testing with koa', () => {
         )
       )
     ),
+    t.type({ code: t.literal(200), data: t.number }),
     ({ data: { sessionId } }) =>
-      T.of({ code: 200, data: sessionId })
+      T.of(response(200, sessionId))
   )
 
   it('Returns a 200 when the route and data matches', async () => {

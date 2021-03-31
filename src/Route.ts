@@ -3,10 +3,8 @@ import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
 import { flow, pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
-import reporter from 'io-ts-reporters'
 import * as Ap from 'fp-ts/Apply'
-import { numberDecoder } from './decoders'
-import { formatWithCursor } from 'prettier'
+import { MatchError,validationError,noMatch } from './MatchError'
 
 export const routeLiteral = (literal: string) => ({
   type: 'Literal' as const,
@@ -71,9 +69,7 @@ export const combineRoutes = <
   HeadersB extends GenericRec
 >(
   b: Route<ParamB, QueryB, DataB, HeadersB>
-): CombineRoute<ParamB, QueryB, DataB, HeadersB> => (
-  a
-) => ({
+): CombineRoute<ParamB, QueryB, DataB, HeadersB> => a => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
   paramDecoder: combineParamDecoder(
@@ -196,8 +192,8 @@ const combineParamDecoder = <
 }
 
 const combineMethod = (a: Method, b: Method): Method => {
-  const aIndex = methods.findIndex((i) => i === a)
-  const bIndex = methods.findIndex((i) => i === b)
+  const aIndex = methods.findIndex(i => i === a)
+  const bIndex = methods.findIndex(i => i === b)
 
   if (aIndex === -1 && bIndex === -1) {
     return 'GET'
@@ -208,7 +204,7 @@ const combineMethod = (a: Method, b: Method): Method => {
 
 const splitUrl = (whole: string): string[] => {
   const pt1 = whole.split('?')[0]
-  return pt1.split('/').filter((a) => a.length > 0)
+  return pt1.split('/').filter(a => a.length > 0)
 }
 
 const parseQueryParams = (
@@ -218,7 +214,7 @@ const parseQueryParams = (
   if (!end) {
     return {}
   }
-  const as = end.split('&').map((a) => a.split('='))
+  const as = end.split('&').map(a => a.split('='))
 
   return flattenParams(
     as.map(([key, val]) => ({ [key]: val }))
@@ -253,20 +249,6 @@ const flattenParams = (
   params: readonly Record<string, string>[]
 ): Record<string, string> =>
   params.reduce((all, a) => ({ ...all, ...a }), {})
-
-const noMatch = (message: string) => ({
-  type: 'NoMatchError' as const,
-  message,
-})
-
-const validationError = (errors: t.Errors) => ({
-  type: 'ValidationError' as const,
-  message: reporter.report(E.left(errors)),
-})
-
-export type MatchError =
-  | ReturnType<typeof noMatch>
-  | ReturnType<typeof validationError>
 
 export type MatchedRoute<Param, Query, Data, Headers> = {
   params: Param
@@ -322,12 +304,12 @@ export const matchRoute = <Param, Query, Data, Headers>(
 
   const paramMatches = pipe(
     params,
-    E.chainW((matches) =>
+    E.chainW(matches =>
       pipe(
         route.paramDecoder.type === 'Decoder'
           ? route.paramDecoder.decoder.decode(matches)
           : E.right(neverValue as Param),
-        E.mapLeft(validationError)
+        E.mapLeft(validationError('request'))
       )
     )
   )
@@ -336,21 +318,21 @@ export const matchRoute = <Param, Query, Data, Headers>(
     route.queryDecoder.type === 'Decoder'
       ? route.queryDecoder.decoder.decode(queryParams)
       : E.right({} as Query),
-    E.mapLeft(validationError)
+    E.mapLeft(validationError('request'))
   )
 
   const dataMatches = pipe(
     route.dataDecoder.type === 'Decoder'
       ? route.dataDecoder.decoder.decode(rawData)
       : E.right({} as Data),
-    E.mapLeft(validationError)
+    E.mapLeft(validationError('request'))
   )
 
   const headersMatches = pipe(
     route.headersDecoder.type === 'Decoder'
       ? route.headersDecoder.decoder.decode(rawHeaders)
       : E.right({} as Headers),
-    E.mapLeft(validationError)
+    E.mapLeft(validationError('request'))
   )
 
   const sequenceT = Ap.sequenceT(E.either)
