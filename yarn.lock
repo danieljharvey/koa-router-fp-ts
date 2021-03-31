@@ -3071,6 +3071,11 @@ only@~0.0.2:
   resolved "https://registry.yarnpkg.com/only/-/only-0.0.2.tgz#2afde84d03e50b9a8edc444e30610a70295edfb4"
   integrity sha1-Kv3oTQPlC5qO3EROMGEKcCle37Q=
 
+openapi-types@^7.2.3:
+  version "7.2.3"
+  resolved "https://registry.yarnpkg.com/openapi-types/-/openapi-types-7.2.3.tgz#83829911a3410a022f0e0cf2b0b2e67232ccf96e"
+  integrity sha512-olbaNxz12R27+mTyJ/ZAFEfUruauHH27AkeQHDHRq5AF0LdNkK1SSV7EourXQDK+4aX7dv2HtyirAGK06WMAsA==
+
 optionator@^0.8.1:
   version "0.8.3"
   resolved "https://registry.yarnpkg.com/optionator/-/optionator-0.8.3.tgz#84fa1d036fe9d3c7e21d99884b601167ec8fb495"

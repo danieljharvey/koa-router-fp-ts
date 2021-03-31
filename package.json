@@ -21,6 +21,7 @@
     "koa-router": "^8.0.8",
     "monocle-ts": "^2.3.9",
     "newtype-ts": "^0.3.4",
+    "openapi-types": "^7.2.3",
     "prettier": "^2.2.1",
     "supertest": "^6.1.4",
     "ts-jest": "^25.4.0",
