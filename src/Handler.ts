@@ -1,14 +1,15 @@
+import { Route } from './Route'
 import {
   MatchedRoute,
-  Route,
   MatchInputs,
   matchRoute,
-  MatchError,
-  param,
-} from './Route'
+} from './matchRoute'
+import { MatchError, validationError } from './MatchError'
 import * as T from 'fp-ts/Task'
 import * as TE from 'fp-ts/TaskEither'
 import { flow } from 'fp-ts/lib/function'
+import * as t from 'io-ts'
+import * as E from 'fp-ts/Either'
 
 export type Handler<
   Param,
@@ -30,6 +31,7 @@ export type RouteWithHandler<
   type: 'RouteWithHandler'
   route: Route<Param, Query, Data, Headers>
   handler: Handler<Param, Query, Data, Headers, ReturnType>
+  responseDecoder: t.Type<ReturnType, unknown, unknown>
 }
 
 export const routeWithHandler = <
@@ -40,6 +42,7 @@ export const routeWithHandler = <
   ReturnType extends { code: number; data: unknown }
 >(
   route: Route<Param, Query, Data, Headers>,
+  responseDecoder: t.Type<ReturnType, unknown, unknown>,
   handler: Handler<Param, Query, Data, Headers, ReturnType>
 ): RouteWithHandler<
   Param,
@@ -51,6 +54,7 @@ export const routeWithHandler = <
   type: 'RouteWithHandler',
   route,
   handler,
+  responseDecoder,
 })
 
 export const runRouteWithHandler = <
@@ -75,5 +79,19 @@ export const runRouteWithHandler = <
     TE.fromEither,
     TE.chain((matchedRoute) =>
       TE.fromTask(routeWithHandler.handler(matchedRoute))
+    ),
+    TE.chainEitherKW(
+      flow(
+        routeWithHandler.responseDecoder.decode,
+        E.mapLeft(validationError('response'))
+      )
     )
   )
+
+export const response = <Code extends number, Data>(
+  code: Code,
+  data: Data
+) => ({
+  code,
+  data,
+})

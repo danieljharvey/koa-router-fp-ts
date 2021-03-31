@@ -1,23 +1,23 @@
 import * as Koa from 'koa'
 import { Server } from 'http'
 import { router } from './index'
+import { combineRoutes } from './Route'
 import {
   lit,
-  combineRoutes,
   getRoute,
   postRoute,
   param,
   validateQuery,
   validateHeaders,
   validateData,
-} from './Route'
+} from './routeCombinators'
 import request from 'supertest'
 import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
 import { numberDecoder } from './decoders'
 import * as T from 'fp-ts/Task'
 import bodyParser from 'koa-bodyparser'
-import { routeWithHandler } from './Handler'
+import { routeWithHandler, response } from './Handler'
 
 const withServer = async (
   router: Koa.Middleware,
@@ -42,14 +42,20 @@ const withServer = async (
   }
 }
 
+const responseD = t.type({
+  code: t.literal(200),
+  data: t.literal('OK'),
+})
+
 const healthz = routeWithHandler(
   pipe(getRoute, lit('healthz')),
-  () => T.of({ code: 200, data: 'OK' })
+  responseD,
+  () => T.of(response(200, 'OK' as const))
 )
 
 describe('Testing with koa', () => {
   it('Returns a 404 when no routes are found', async () => {
-    await withServer(router(healthz), async server => {
+    await withServer(router(healthz), async (server) => {
       const reply = await request(server)
         .get('/')
         .expect(404)
@@ -59,7 +65,7 @@ describe('Testing with koa', () => {
   })
 
   it('Returns a 404 when method does not match for healthz route', async () => {
-    await withServer(router(healthz), async server => {
+    await withServer(router(healthz), async (server) => {
       const reply = await request(server)
         .post('/healthz')
         .expect(404)
@@ -69,7 +75,7 @@ describe('Testing with koa', () => {
   })
 
   it('Returns a 200 when healthz route is found', async () => {
-    await withServer(router(healthz), async server => {
+    await withServer(router(healthz), async (server) => {
       const reply = await request(server)
         .get('/healthz')
         .expect(200)
@@ -81,11 +87,12 @@ describe('Testing with koa', () => {
 
   const userId = routeWithHandler(
     pipe(getRoute, lit('user'), param('id', numberDecoder)),
-    ({ params: { id } }) => T.of({ code: 200, data: id })
+    t.type({ code: t.literal(200), data: t.number }),
+    ({ params: { id } }) => T.of(response(200, id))
   )
 
   it("Returns a 400 when the route matches but the params don't validate", async () => {
-    await withServer(router(userId), async server => {
+    await withServer(router(userId), async (server) => {
       const reply = await request(server)
         .get('/user/dog')
         .expect(400)
@@ -96,7 +103,7 @@ describe('Testing with koa', () => {
   })
 
   it('Returns a 200 when the route and params match', async () => {
-    await withServer(router(userId), async server => {
+    await withServer(router(userId), async (server) => {
       await request(server).get('/user/123').expect(200)
     })
   })
@@ -109,11 +116,12 @@ describe('Testing with koa', () => {
         validateQuery(t.type({ id: numberDecoder }))
       )
     ),
-    ({ query: { id } }) => T.of({ code: 200, data: id })
+    t.type({ code: t.literal(200), data: t.number }),
+    ({ query: { id } }) => T.of(response(200, id))
   )
 
   it('Returns a 200 when the route and query params match', async () => {
-    await withServer(router(userQuery), async server => {
+    await withServer(router(userQuery), async (server) => {
       await request(server).get('/user?id=123').expect(200)
     })
   })
@@ -126,12 +134,13 @@ describe('Testing with koa', () => {
         validateHeaders(t.type({ session: numberDecoder }))
       )
     ),
+    t.type({ code: t.literal(200), data: t.number }),
     ({ headers: { session } }) =>
-      T.of({ code: 200, data: session })
+      T.of(response(200, session))
   )
 
   it('Returns a 200 when the route and headers match', async () => {
-    await withServer(router(userHeader), async server => {
+    await withServer(router(userHeader), async (server) => {
       await request(server)
         .get('/user')
         .set({ session: '123' })
@@ -152,12 +161,13 @@ describe('Testing with koa', () => {
         )
       )
     ),
+    t.type({ code: t.literal(200), data: t.number }),
     ({ data: { sessionId } }) =>
-      T.of({ code: 200, data: sessionId })
+      T.of(response(200, sessionId))
   )
 
   it('Returns a 200 when the route and data matches', async () => {
-    await withServer(router(userPost), async server => {
+    await withServer(router(userPost), async (server) => {
       await request(server)
         .post('/user')
         .send({ sessionId: 123, dog: true })
