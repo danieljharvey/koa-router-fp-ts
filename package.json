@@ -38,7 +38,9 @@
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watchAll",
-    "typescript:watch": "tsc --noEmit --watch"
+    "typescript:watch": "tsc --noEmit --watch",
+    "prettier": "prettier --check 'src/**/*.ts'",
+    "format": "prettier --write 'src/**/*.ts'"
   },
   "devDependencies": {
     "@types/supertest": "^2.0.10"

@@ -77,7 +77,7 @@ export const runRouteWithHandler = <
   flow(
     matchRoute(routeWithHandler.route),
     TE.fromEither,
-    TE.chain(matchedRoute =>
+    TE.chain((matchedRoute) =>
       TE.fromTask(routeWithHandler.handler(matchedRoute))
     ),
     TE.chainEitherKW(

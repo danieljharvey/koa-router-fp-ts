@@ -55,7 +55,7 @@ const healthz = routeWithHandler(
 
 describe('Testing with koa', () => {
   it('Returns a 404 when no routes are found', async () => {
-    await withServer(router(healthz), async server => {
+    await withServer(router(healthz), async (server) => {
       const reply = await request(server)
         .get('/')
         .expect(404)
@@ -65,7 +65,7 @@ describe('Testing with koa', () => {
   })
 
   it('Returns a 404 when method does not match for healthz route', async () => {
-    await withServer(router(healthz), async server => {
+    await withServer(router(healthz), async (server) => {
       const reply = await request(server)
         .post('/healthz')
         .expect(404)
@@ -75,7 +75,7 @@ describe('Testing with koa', () => {
   })
 
   it('Returns a 200 when healthz route is found', async () => {
-    await withServer(router(healthz), async server => {
+    await withServer(router(healthz), async (server) => {
       const reply = await request(server)
         .get('/healthz')
         .expect(200)
@@ -92,7 +92,7 @@ describe('Testing with koa', () => {
   )
 
   it("Returns a 400 when the route matches but the params don't validate", async () => {
-    await withServer(router(userId), async server => {
+    await withServer(router(userId), async (server) => {
       const reply = await request(server)
         .get('/user/dog')
         .expect(400)
@@ -103,7 +103,7 @@ describe('Testing with koa', () => {
   })
 
   it('Returns a 200 when the route and params match', async () => {
-    await withServer(router(userId), async server => {
+    await withServer(router(userId), async (server) => {
       await request(server).get('/user/123').expect(200)
     })
   })
@@ -121,7 +121,7 @@ describe('Testing with koa', () => {
   )
 
   it('Returns a 200 when the route and query params match', async () => {
-    await withServer(router(userQuery), async server => {
+    await withServer(router(userQuery), async (server) => {
       await request(server).get('/user?id=123').expect(200)
     })
   })
@@ -140,7 +140,7 @@ describe('Testing with koa', () => {
   )
 
   it('Returns a 200 when the route and headers match', async () => {
-    await withServer(router(userHeader), async server => {
+    await withServer(router(userHeader), async (server) => {
       await request(server)
         .get('/user')
         .set({ session: '123' })
@@ -167,7 +167,7 @@ describe('Testing with koa', () => {
   )
 
   it('Returns a 200 when the route and data matches', async () => {
-    await withServer(router(userPost), async server => {
+    await withServer(router(userPost), async (server) => {
       await request(server)
         .post('/user')
         .send({ sessionId: 123, dog: true })

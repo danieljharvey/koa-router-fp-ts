@@ -43,7 +43,9 @@ export const combineRoutes = <
   HeadersB extends GenericRec
 >(
   b: Route<ParamB, QueryB, DataB, HeadersB>
-): CombineRoute<ParamB, QueryB, DataB, HeadersB> => a => ({
+): CombineRoute<ParamB, QueryB, DataB, HeadersB> => (
+  a
+) => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
   paramDecoder: combineParamDecoder(

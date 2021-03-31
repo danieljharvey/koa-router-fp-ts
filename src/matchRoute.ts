@@ -13,7 +13,7 @@ import { Route } from './Route'
 
 const splitUrl = (whole: string): string[] => {
   const pt1 = whole.split('?')[0]
-  return pt1.split('/').filter(a => a.length > 0)
+  return pt1.split('/').filter((a) => a.length > 0)
 }
 
 const parseQueryParams = (
@@ -23,7 +23,7 @@ const parseQueryParams = (
   if (!end) {
     return {}
   }
-  const as = end.split('&').map(a => a.split('='))
+  const as = end.split('&').map((a) => a.split('='))
 
   return flattenParams(
     as.map(([key, val]) => ({ [key]: val }))
@@ -113,7 +113,7 @@ export const matchRoute = <Param, Query, Data, Headers>(
 
   const paramMatches = pipe(
     params,
-    E.chainW(matches =>
+    E.chainW((matches) =>
       pipe(
         route.paramDecoder.type === 'Decoder'
           ? route.paramDecoder.decoder.decode(matches)

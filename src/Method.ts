@@ -6,8 +6,8 @@ export const combineMethod = (
   a: Method,
   b: Method
 ): Method => {
-  const aIndex = methods.findIndex(i => i === a)
-  const bIndex = methods.findIndex(i => i === b)
+  const aIndex = methods.findIndex((i) => i === a)
+  const bIndex = methods.findIndex((i) => i === b)
 
   if (aIndex === -1 && bIndex === -1) {
     return 'GET'

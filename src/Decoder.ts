@@ -30,4 +30,3 @@ export const combineParamDecoder = <
   }
   return { type: 'NoDecoder' }
 }
-
