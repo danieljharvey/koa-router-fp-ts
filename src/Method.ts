@@ -2,7 +2,10 @@ export type Method = 'GET' | 'POST'
 
 const methods: Method[] = ['GET', 'POST']
 
-export const combineMethod = (a: Method, b: Method): Method => {
+export const combineMethod = (
+  a: Method,
+  b: Method
+): Method => {
   const aIndex = methods.findIndex(i => i === a)
   const bIndex = methods.findIndex(i => i === b)
 
@@ -12,4 +15,3 @@ export const combineMethod = (a: Method, b: Method): Method => {
   const highest = Math.max(aIndex, bIndex)
   return methods[highest]
 }
-

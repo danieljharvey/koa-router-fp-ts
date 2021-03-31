@@ -18,5 +18,3 @@ export const validationError = (
 export type MatchError =
   | ReturnType<typeof noMatch>
   | ReturnType<ReturnType<typeof validationError>>
-
-

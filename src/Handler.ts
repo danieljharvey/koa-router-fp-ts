@@ -1,11 +1,13 @@
+import { Route } from './Route'
 import {
-  Route,
-} from './Route'
-import { MatchedRoute,MatchInputs,matchRoute } from './matchRoute'
-import { MatchError, validationError} from './MatchError'
+  MatchedRoute,
+  MatchInputs,
+  matchRoute,
+} from './matchRoute'
+import { MatchError, validationError } from './MatchError'
 import * as T from 'fp-ts/Task'
 import * as TE from 'fp-ts/TaskEither'
-import {  flow } from 'fp-ts/lib/function'
+import { flow } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import * as E from 'fp-ts/Either'
 
@@ -41,7 +43,7 @@ export const routeWithHandler = <
 >(
   route: Route<Param, Query, Data, Headers>,
   responseDecoder: t.Type<ReturnType, unknown, unknown>,
-  handler: Handler<Param, Query, Data, Headers, ReturnType>,
+  handler: Handler<Param, Query, Data, Headers, ReturnType>
 ): RouteWithHandler<
   Param,
   Query,

@@ -11,5 +11,3 @@ export const routeParam = (name: string) => ({
 export type RouteItem =
   | ReturnType<typeof routeLiteral>
   | ReturnType<typeof routeParam>
-
-

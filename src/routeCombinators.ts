@@ -1,7 +1,12 @@
 import { flow } from 'fp-ts/function'
 import * as t from 'io-ts'
-import { routeLiteral,routeParam} from './RouteItem'
-import { Route,CombineRoute,emptyRoute,combineRoutes} from './Route'
+import { routeLiteral, routeParam } from './RouteItem'
+import {
+  Route,
+  CombineRoute,
+  emptyRoute,
+  combineRoutes,
+} from './Route'
 
 export const getRoute = emptyRoute
 
@@ -68,6 +73,3 @@ export const validateHeaders = <Headers>(
     decoder: headersDecoder,
   },
 })
-
-
-

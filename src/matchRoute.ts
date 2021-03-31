@@ -1,11 +1,15 @@
 import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
-import {  pipe } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 import * as Ap from 'fp-ts/Apply'
-import { MatchError,validationError,noMatch } from './MatchError'
+import {
+  MatchError,
+  validationError,
+  noMatch,
+} from './MatchError'
 import { RouteItem } from './RouteItem'
-import { Method}from'./Method'
-import { Route} from'./Route'
+import { Method } from './Method'
+import { Route } from './Route'
 
 const splitUrl = (whole: string): string[] => {
   const pt1 = whole.split('?')[0]

@@ -1,7 +1,13 @@
+import { combineRoutes } from './Route'
 import {
-  combineRoutes,
-} from './Route'
-import { getRoute,postRoute,lit,param,validateQuery,validateData,validateHeaders} from './routeCombinators'
+  getRoute,
+  postRoute,
+  lit,
+  param,
+  validateQuery,
+  validateData,
+  validateHeaders,
+} from './routeCombinators'
 import * as E from 'fp-ts/Either'
 import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'

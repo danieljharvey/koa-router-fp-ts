@@ -6,12 +6,7 @@ import {
 import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
-import {
-  getRoute,
-  lit,
-  param,
-} from './routeCombinators'
-import { combineRoutes} from './Route'
+import { getRoute, lit, param } from './routeCombinators'
 import { pipe } from 'fp-ts/lib/function'
 import { numberDecoder } from './decoders'
 
@@ -27,7 +22,7 @@ describe('Test the goddamn handlers', () => {
       responseD,
       () => {
         return T.of(response(200, 'OK' as const))
-      },
+      }
     )
 
     const result = await runRouteWithHandler(healthz)({
@@ -53,7 +48,7 @@ describe('Test the goddamn handlers', () => {
       responseD,
       () => {
         return T.of(response(500 as any, 'OK' as const))
-      },
+      }
     )
 
     const result = await runRouteWithHandler(healthz)({
@@ -100,7 +95,7 @@ describe('Test the goddamn handlers', () => {
               )
             )
           : T.of(response(400, 'No dogs found'))
-      },
+      }
     )
 
     const result = await runRouteWithHandler(

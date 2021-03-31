@@ -1,6 +1,6 @@
 import { RouteItem } from './RouteItem'
 import { Method, combineMethod } from './Method'
-import {Decoder, combineParamDecoder} from './Decoder'
+import { Decoder, combineParamDecoder } from './Decoder'
 type GenericRec = Record<string, unknown>
 
 export type Route<
@@ -72,4 +72,3 @@ export const emptyRoute: Route<{}, {}, {}, {}> = {
   dataDecoder: { type: 'NoDecoder' },
   headersDecoder: { type: 'NoDecoder' },
 }
-

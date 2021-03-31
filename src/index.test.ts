@@ -50,7 +50,7 @@ const responseD = t.type({
 const healthz = routeWithHandler(
   pipe(getRoute, lit('healthz')),
   responseD,
-  () => T.of(response(200, 'OK' as const)),
+  () => T.of(response(200, 'OK' as const))
 )
 
 describe('Testing with koa', () => {
@@ -88,7 +88,7 @@ describe('Testing with koa', () => {
   const userId = routeWithHandler(
     pipe(getRoute, lit('user'), param('id', numberDecoder)),
     t.type({ code: t.literal(200), data: t.number }),
-    ({ params: { id } }) => T.of(response(200, id)),
+    ({ params: { id } }) => T.of(response(200, id))
   )
 
   it("Returns a 400 when the route matches but the params don't validate", async () => {
@@ -117,7 +117,7 @@ describe('Testing with koa', () => {
       )
     ),
     t.type({ code: t.literal(200), data: t.number }),
-    ({ query: { id } }) => T.of(response(200, id)),
+    ({ query: { id } }) => T.of(response(200, id))
   )
 
   it('Returns a 200 when the route and query params match', async () => {
@@ -137,7 +137,7 @@ describe('Testing with koa', () => {
     t.type({ code: t.literal(200), data: t.number }),
     ({ headers: { session } }) =>
       T.of(response(200, session))
-      )
+  )
 
   it('Returns a 200 when the route and headers match', async () => {
     await withServer(router(userHeader), async server => {
