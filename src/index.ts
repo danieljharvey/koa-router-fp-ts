@@ -1,5 +1,4 @@
 import * as Koa from 'koa'
-import { Route, matchRoute } from './Route'
 import {
   RouteWithHandler,
   runRouteWithHandler,

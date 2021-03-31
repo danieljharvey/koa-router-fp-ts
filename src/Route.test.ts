@@ -1,18 +1,12 @@
 import {
-  matchRoute,
   combineRoutes,
-  getRoute,
-  postRoute,
-  lit,
-  param,
-  validateQuery,
-  validateData,
-  validateHeaders,
 } from './Route'
+import { getRoute,postRoute,lit,param,validateQuery,validateData,validateHeaders} from './routeCombinators'
 import * as E from 'fp-ts/Either'
 import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
 import { numberDecoder, booleanDecoder } from './decoders'
+import { matchRoute } from './matchRoute'
 
 const healthz = pipe(getRoute, lit('healthz'))
 

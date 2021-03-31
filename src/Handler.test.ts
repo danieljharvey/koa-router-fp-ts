@@ -1,5 +1,4 @@
 import {
-  RouteWithHandler,
   runRouteWithHandler,
   routeWithHandler,
   response,
@@ -9,10 +8,10 @@ import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
 import {
   getRoute,
-  combineRoutes,
   lit,
   param,
-} from './Route'
+} from './routeCombinators'
+import { combineRoutes} from './Route'
 import { pipe } from 'fp-ts/lib/function'
 import { numberDecoder } from './decoders'
 

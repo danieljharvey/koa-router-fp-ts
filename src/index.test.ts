@@ -1,16 +1,16 @@
 import * as Koa from 'koa'
 import { Server } from 'http'
 import { router } from './index'
+import { combineRoutes } from './Route'
 import {
   lit,
-  combineRoutes,
   getRoute,
   postRoute,
   param,
   validateQuery,
   validateHeaders,
   validateData,
-} from './Route'
+} from './routeCombinators'
 import request from 'supertest'
 import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
