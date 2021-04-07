@@ -2,6 +2,7 @@ import { RouteItem } from './RouteItem'
 import { Method, combineMethod } from './Method'
 import { Decoder, combineParamDecoder } from './Decoder'
 type GenericRec = Record<string, unknown>
+import * as O from 'fp-ts/Option'
 
 export type Route<
   Param = {},
@@ -9,7 +10,7 @@ export type Route<
   Data = {},
   Headers = {}
 > = {
-  method: Method
+  method: O.Option<Method>
   parts: RouteItem[]
   paramDecoder: Decoder<Param>
   queryDecoder: Decoder<Query>
@@ -43,9 +44,7 @@ export const combineRoutes = <
   HeadersB extends GenericRec
 >(
   b: Route<ParamB, QueryB, DataB, HeadersB>
-): CombineRoute<ParamB, QueryB, DataB, HeadersB> => (
-  a
-) => ({
+): CombineRoute<ParamB, QueryB, DataB, HeadersB> => a => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
   paramDecoder: combineParamDecoder(
@@ -67,7 +66,7 @@ export const combineRoutes = <
 })
 
 export const emptyRoute: Route<{}, {}, {}, {}> = {
-  method: 'GET',
+  method: O.none,
   parts: [],
   paramDecoder: { type: 'NoDecoder' },
   queryDecoder: { type: 'NoDecoder' },

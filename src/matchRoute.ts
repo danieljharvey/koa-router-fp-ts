@@ -1,6 +1,7 @@
+import * as O from 'fp-ts/Option'
 import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
-import { pipe } from 'fp-ts/function'
+import { pipe, identity } from 'fp-ts/function'
 import * as Ap from 'fp-ts/Apply'
 import {
   MatchError,
@@ -13,7 +14,7 @@ import { Route } from './Route'
 
 const splitUrl = (whole: string): string[] => {
   const pt1 = whole.split('?')[0]
-  return pt1.split('/').filter((a) => a.length > 0)
+  return pt1.split('/').filter(a => a.length > 0)
 }
 
 const parseQueryParams = (
@@ -23,7 +24,7 @@ const parseQueryParams = (
   if (!end) {
     return {}
   }
-  const as = end.split('&').map((a) => a.split('='))
+  const as = end.split('&').map(a => a.split('='))
 
   return flattenParams(
     as.map(([key, val]) => ({ [key]: val }))
@@ -31,9 +32,16 @@ const parseQueryParams = (
 }
 
 const matchMethod = (
-  method: Method,
+  method: O.Option<Method>,
   requestMethod: string
-) => method.toLowerCase() === requestMethod.toLowerCase()
+): boolean =>
+  pipe(
+    method,
+    O.map(
+      m => m.toLowerCase() === requestMethod.toLowerCase()
+    ),
+    O.fold(() => false, identity)
+  )
 
 const matchRouteItem = (
   routeItem: RouteItem,
@@ -113,7 +121,7 @@ export const matchRoute = <Param, Query, Data, Headers>(
 
   const paramMatches = pipe(
     params,
-    E.chainW((matches) =>
+    E.chainW(matches =>
       pipe(
         route.paramDecoder.type === 'Decoder'
           ? route.paramDecoder.decoder.decode(matches)

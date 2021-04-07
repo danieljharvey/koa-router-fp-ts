@@ -51,6 +51,24 @@ const userWithData = pipe(
 )
 
 describe('Route matching', () => {
+  it('Get after Post works is Get', () => {
+    const healthzGet = pipe(
+      postRoute,
+      combineRoutes(getRoute),
+      lit('healthz')
+    )
+    expect(
+      E.isRight(
+        matchRoute(healthzGet)({
+          url: '/healthz',
+          method: 'get',
+          rawData: {},
+          rawHeaders: {},
+        })
+      )
+    ).toBeTruthy()
+  })
+
   it('Healthz endpoint', () => {
     expect(
       matchRoute(healthz)({

@@ -7,12 +7,16 @@ import {
   emptyRoute,
   combineRoutes,
 } from './Route'
+import * as O from 'fp-ts/Option'
 
-export const getRoute = emptyRoute
+export const getRoute: Route = {
+  ...emptyRoute,
+  method: O.some('GET'),
+}
 
 export const postRoute: Route = {
   ...emptyRoute,
-  method: 'POST',
+  method: O.some('POST'),
 }
 
 const literal = (literal: string): Route => ({
