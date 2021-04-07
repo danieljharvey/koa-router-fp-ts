@@ -4,8 +4,8 @@ import {
   pathItemForRoute,
 } from './openapi'
 import * as t from 'io-ts'
-import { response, routeWithHandler } from './Handler'
-import { getRoute, lit } from './routeCombinators'
+import { response, routeWithHandler } from '../Handler'
+import { getRoute, lit } from '../routeCombinators'
 import { pipe } from 'fp-ts/function'
 import * as T from 'fp-ts/Task'
 
@@ -31,13 +31,16 @@ describe('createOpenAPISpec', () => {
   })
   it('responsesObject', () => {
     const resp = responsesObject(healthDecoder)
-    expect(Object.keys(resp)).toEqual(['200'])
+    expect(resp).toEqual([
+      { '200': { description: 'Success' } },
+      [],
+    ])
   })
   it('pathItemForRoute', () => {
-    const [name, _] = pathItemForRoute(
+    const { url } = pathItemForRoute(
       healthz.route,
       healthz.responseDecoder
     )
-    expect(name).toEqual('/healthz')
+    expect(url).toEqual('/healthz')
   })
 })
