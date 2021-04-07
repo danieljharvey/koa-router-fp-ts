@@ -3,7 +3,9 @@ import * as t from 'io-ts'
 import { RouteWithHandler } from '../Handler'
 import { Route } from '../Route'
 import { showRouteItems } from '../RouteItem'
-
+import * as O from 'fp-ts/Option'
+import { pipe } from 'fp-ts/function'
+import * as A from 'fp-ts/Apply'
 type AnyHandler = RouteWithHandler<any, any, any, any, any>
 
 export const createOpenAPISpec = (
@@ -31,13 +33,28 @@ export const createOpenAPISpec = (
   return x
 }
 
-//    type SchemaObject = ArraySchemaObject | NonArraySchemaObject;
+const sequenceS = A.sequenceS(O.option)
 
-const decoderToSchema = (
-  decoder: t.Type<unknown, unknown, unknown>
-) => {
-  console.log(decoder)
-}
+const withInterfaceType = (
+  decoder: t.InterfaceType<any, any, any, any>
+): O.Option<OpenAPIV3.SchemaObject> =>
+  pipe(
+    sequenceS(
+      Object.keys(decoder.props)
+        .map<[string, O.Option<any>]>(key => [
+          key,
+          withDecoder(decoder.props[key]),
+        ])
+        .reduce(
+          (as, [key, val]) => ({ ...as, [key]: val }),
+          {} as Record<
+            string,
+            O.Option<OpenAPIV3.SchemaObject>
+          >
+        )
+    ),
+    O.map(properties => ({ type: 'object', properties }))
+  )
 
 const statusCodeDescription = (code: number): string => {
   if (code >= 200 && code < 300) {
@@ -51,17 +68,79 @@ const statusCodeDescription = (code: number): string => {
   }
   return ''
 }
-export const responsesObject = (
-  decoder: any
-): [OpenAPIV3.ResponsesObject, NamedSchema[]] => {
-  const code =
-    decoder?._tag === 'InterfaceType'
-      ? decoder.props?.code?.value
-      : 0
-  const data = {
-    description: statusCodeDescription(code),
+
+type ResponseObject = {
+  responses: OpenAPIV3.ResponsesObject
+  namedSchemas: NamedSchema[]
+}
+
+const withRefinementType = (
+  decoder: t.RefinementType<any>
+): O.Option<OpenAPIV3.SchemaObject> => {
+  switch (decoder.name) {
+    case 'Int':
+      return O.some({ type: 'integer' })
   }
-  return [{ [code]: data }, []]
+  return O.none
+}
+
+const withArrayType = (
+  decoder: t.ArrayType<any>
+): O.Option<OpenAPIV3.SchemaObject> =>
+  pipe(
+    withDecoder(decoder.type),
+    O.map(inner => ({ type: 'array', items: inner }))
+  )
+
+export const withDecoder = (
+  decoder: t.Type<any>
+): O.Option<OpenAPIV3.SchemaObject> => {
+  if (decoder instanceof t.InterfaceType) {
+    return withInterfaceType(decoder)
+  } else if (decoder instanceof t.StringType) {
+    return O.some({ type: 'string' })
+  } else if (decoder instanceof t.BooleanType) {
+    return O.some({ type: 'boolean' })
+  } else if (decoder instanceof t.NumberType) {
+    return O.some({ type: 'number' })
+  } else if (decoder instanceof t.RefinementType) {
+    return withRefinementType(decoder)
+  } else if (decoder instanceof t.ArrayType) {
+    return withArrayType(decoder)
+  }
+  return O.none
+}
+
+export const responsesObject = (
+  decoder: any // t.Type<unknown, unknown, unknown>
+): ResponseObject => {
+  if (decoder?._tag === 'InterfaceType') {
+    const code =
+      decoder?._tag === 'InterfaceType'
+        ? decoder.props?.code?.value
+        : 0
+    const dataType = decoder.props?.data
+      ? withDecoder(decoder.props.data)
+      : O.none
+    const data = {
+      description: statusCodeDescription(code),
+    }
+    return {
+      responses: { [code]: data },
+      namedSchemas: O.isSome(dataType)
+        ? [
+            {
+              name: statusCodeDescription(code),
+              schema: dataType.value,
+            },
+          ]
+        : [],
+    }
+  }
+  return {
+    responses: {},
+    namedSchemas: [],
+  }
 }
 
 type PathItem = {
@@ -79,12 +158,12 @@ export const pathItemForRoute = (
   route: Route,
   responseDecoder: t.Type<any, any, any>
 ): PathItem => {
-  const [responses, schemas] = responsesObject(
+  const { responses, namedSchemas } = responsesObject(
     responseDecoder
   )
   return {
     url: showRouteItems(route.parts),
-    schemas,
+    schemas: namedSchemas,
     pathItem: {
       get: {
         description: 'route info',
