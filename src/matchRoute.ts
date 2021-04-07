@@ -1,6 +1,7 @@
+import * as O from 'fp-ts/Option'
 import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
-import { pipe } from 'fp-ts/function'
+import { pipe, identity } from 'fp-ts/function'
 import * as Ap from 'fp-ts/Apply'
 import {
   MatchError,
@@ -31,9 +32,16 @@ const parseQueryParams = (
 }
 
 const matchMethod = (
-  method: Method,
+  method: O.Option<Method>,
   requestMethod: string
-) => method.toLowerCase() === requestMethod.toLowerCase()
+): boolean =>
+  pipe(
+    method,
+    O.map(
+      (m) => m.toLowerCase() === requestMethod.toLowerCase()
+    ),
+    O.fold(() => false, identity)
+  )
 
 const matchRouteItem = (
   routeItem: RouteItem,
