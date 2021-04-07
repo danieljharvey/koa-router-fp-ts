@@ -11,3 +11,16 @@ export const routeParam = (name: string) => ({
 export type RouteItem =
   | ReturnType<typeof routeLiteral>
   | ReturnType<typeof routeParam>
+
+const showRouteItem = (routeItem: RouteItem): string => {
+  switch (routeItem.type) {
+    case 'Literal':
+      return routeItem.literal
+    case 'Param':
+      return `:${routeItem.name}`
+  }
+}
+
+export const showRouteItems = (
+  routeItems: RouteItem[]
+): string => '/' + routeItems.map(showRouteItem).join('/')
