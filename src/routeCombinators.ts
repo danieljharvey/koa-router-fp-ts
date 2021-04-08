@@ -27,16 +27,28 @@ const literal = (literal: string): Route => ({
 export const lit = (lit: string) =>
   flow(combineRoutes(literal(lit)))
 
+const response = <ResponseType>(
+  decoder: t.Type<ResponseType>
+): Route<ResponseType> => ({
+  ...emptyRoute,
+  responseDecoder: { type: 'Decoder', decoder },
+})
+
+export const addResponse = <ResponseType>(
+  decoder: t.Type<ResponseType>
+): CombineRoute<ResponseType> =>
+  flow(combineRoutes(response(decoder)))
+
 export const param = <ParamName extends string, Param>(
   param: ParamName,
   decoder: t.Type<Param, unknown, unknown>
-): CombineRoute<Record<ParamName, Param>> =>
+): CombineRoute<never, Record<ParamName, Param>> =>
   flow(combineRoutes(parameter(param, decoder)))
 
 const parameter = <ParamName extends string, Param>(
   param: ParamName,
   decoder: t.Type<Param, unknown, unknown>
-): Route<Record<ParamName, Param>> => ({
+): Route<never, Record<ParamName, Param>> => ({
   ...emptyRoute,
   parts: [routeParam(param)],
   paramDecoder: {
@@ -49,28 +61,28 @@ const parameter = <ParamName extends string, Param>(
 
 export const validateParams = <Param>(
   paramDecoder: t.Type<Param, unknown, unknown>
-): Route<Param> => ({
+): Route<never, Param> => ({
   ...emptyRoute,
   paramDecoder: { type: 'Decoder', decoder: paramDecoder },
 })
 
 export const validateQuery = <Query>(
   queryDecoder: t.Type<Query, unknown, unknown>
-): Route<{}, Query> => ({
+): Route<never, {}, Query> => ({
   ...emptyRoute,
   queryDecoder: { type: 'Decoder', decoder: queryDecoder },
 })
 
 export const validateData = <Data>(
   dataDecoder: t.Type<Data, unknown, unknown>
-): Route<{}, {}, Data> => ({
+): Route<never, {}, {}, Data> => ({
   ...emptyRoute,
   dataDecoder: { type: 'Decoder', decoder: dataDecoder },
 })
 
 export const validateHeaders = <Headers>(
   headersDecoder: t.Type<Headers, unknown, unknown>
-): Route<{}, {}, {}, Headers> => ({
+): Route<never, {}, {}, {}, Headers> => ({
   ...emptyRoute,
   headersDecoder: {
     type: 'Decoder',

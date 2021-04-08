@@ -10,6 +10,7 @@ import {
   validateQuery,
   validateHeaders,
   validateData,
+  addResponse,
 } from './routeCombinators'
 import request from 'supertest'
 import { pipe } from 'fp-ts/function'
@@ -48,8 +49,8 @@ const responseD = t.type({
 })
 
 const healthz = routeWithHandler(
-  pipe(getRoute, lit('healthz')),
-  responseD,
+  pipe(getRoute, lit('healthz'), addResponse(responseD)),
+
   () => T.of(response(200, 'OK' as const))
 )
 
@@ -86,8 +87,15 @@ describe('Testing with koa', () => {
   })
 
   const userId = routeWithHandler(
-    pipe(getRoute, lit('user'), param('id', numberDecoder)),
-    t.type({ code: t.literal(200), data: t.number }),
+    pipe(
+      getRoute,
+      lit('user'),
+      param('id', numberDecoder),
+      addResponse(
+        t.type({ code: t.literal(200), data: t.number })
+      )
+    ),
+
     ({ params: { id } }) => T.of(response(200, id))
   )
 
@@ -112,11 +120,14 @@ describe('Testing with koa', () => {
     pipe(
       getRoute,
       lit('user'),
+      addResponse(
+        t.type({ code: t.literal(200), data: t.number })
+      ),
       combineRoutes(
         validateQuery(t.type({ id: numberDecoder }))
       )
     ),
-    t.type({ code: t.literal(200), data: t.number }),
+
     ({ query: { id } }) => T.of(response(200, id))
   )
 
@@ -130,11 +141,14 @@ describe('Testing with koa', () => {
     pipe(
       getRoute,
       lit('user'),
+      addResponse(
+        t.type({ code: t.literal(200), data: t.number })
+      ),
       combineRoutes(
         validateHeaders(t.type({ session: numberDecoder }))
       )
     ),
-    t.type({ code: t.literal(200), data: t.number }),
+
     ({ headers: { session } }) =>
       T.of(response(200, session))
   )
@@ -152,6 +166,9 @@ describe('Testing with koa', () => {
     pipe(
       postRoute,
       lit('user'),
+      addResponse(
+        t.type({ code: t.literal(200), data: t.number })
+      ),
       combineRoutes(
         validateData(
           t.type({
@@ -161,7 +178,6 @@ describe('Testing with koa', () => {
         )
       )
     ),
-    t.type({ code: t.literal(200), data: t.number }),
     ({ data: { sessionId } }) =>
       T.of(response(200, sessionId))
   )

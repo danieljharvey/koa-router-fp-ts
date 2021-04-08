@@ -6,7 +6,12 @@ import {
 import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
-import { getRoute, lit, param } from './routeCombinators'
+import {
+  addResponse,
+  getRoute,
+  lit,
+  param,
+} from './routeCombinators'
 import { pipe } from 'fp-ts/lib/function'
 import { numberDecoder } from './decoders'
 
@@ -18,8 +23,12 @@ describe('Test the goddamn handlers', () => {
     })
 
     const healthz = routeWithHandler(
-      pipe(getRoute, lit('healthz')),
-      responseD,
+      pipe(
+        getRoute,
+        lit('healthz'),
+        addResponse(responseD)
+      ),
+
       () => {
         return T.of(response(200, 'OK' as const))
       }
@@ -44,8 +53,12 @@ describe('Test the goddamn handlers', () => {
     })
 
     const healthz = routeWithHandler(
-      pipe(getRoute, lit('healthz')),
-      responseD,
+      pipe(
+        getRoute,
+        lit('healthz'),
+        addResponse(responseD)
+      ),
+
       () => {
         return T.of(response(500 as any, 'OK' as const))
       }
@@ -80,9 +93,9 @@ describe('Test the goddamn handlers', () => {
       pipe(
         getRoute,
         lit('dogs'),
-        param('age', numberDecoder)
+        param('age', numberDecoder),
+        addResponse(dogResponse)
       ),
-      dogResponse,
       ({ params: { age } }) => {
         const matchingDogs = Object.entries(dogAges).filter(
           ([_, dogAge]) => dogAge === age

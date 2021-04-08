@@ -4,10 +4,15 @@ import {
   MatchInputs,
   matchRoute,
 } from './matchRoute'
-import { MatchError, validationError } from './MatchError'
+import {
+  MatchError,
+  noResponseValidator,
+  validationError,
+} from './MatchError'
+import * as D from './Decoder'
 import * as T from 'fp-ts/Task'
 import * as TE from 'fp-ts/TaskEither'
-import { flow } from 'fp-ts/lib/function'
+import { flow, pipe } from 'fp-ts/lib/function'
 import * as t from 'io-ts'
 import * as E from 'fp-ts/Either'
 
@@ -16,22 +21,27 @@ export type Handler<
   Query,
   Data,
   Headers,
-  ReturnType extends { code: number; data: unknown }
+  ResponseType extends { code: number; data: unknown }
 > = (
   input: MatchedRoute<Param, Query, Data, Headers>
-) => T.Task<ReturnType>
+) => T.Task<ResponseType>
 
 export type RouteWithHandler<
   Param,
   Query,
   Data,
   Headers,
-  ReturnType extends { code: number; data: unknown }
+  ResponseType extends { code: number; data: unknown }
 > = {
   type: 'RouteWithHandler'
-  route: Route<Param, Query, Data, Headers>
-  handler: Handler<Param, Query, Data, Headers, ReturnType>
-  responseDecoder: t.Type<ReturnType, unknown, unknown>
+  route: Route<ResponseType, Param, Query, Data, Headers>
+  handler: Handler<
+    Param,
+    Query,
+    Data,
+    Headers,
+    ResponseType
+  >
 }
 
 export const routeWithHandler = <
@@ -39,22 +49,26 @@ export const routeWithHandler = <
   Query,
   Data,
   Headers,
-  ReturnType extends { code: number; data: unknown }
+  ResponseType extends { code: number; data: unknown }
 >(
-  route: Route<Param, Query, Data, Headers>,
-  responseDecoder: t.Type<ReturnType, unknown, unknown>,
-  handler: Handler<Param, Query, Data, Headers, ReturnType>
+  route: Route<ResponseType, Param, Query, Data, Headers>,
+  handler: Handler<
+    Param,
+    Query,
+    Data,
+    Headers,
+    ResponseType
+  >
 ): RouteWithHandler<
   Param,
   Query,
   Data,
   Headers,
-  ReturnType
+  ResponseType
 > => ({
   type: 'RouteWithHandler',
   route,
   handler,
-  responseDecoder,
 })
 
 export const runRouteWithHandler = <
@@ -62,31 +76,42 @@ export const runRouteWithHandler = <
   Query,
   Data,
   Headers,
-  ReturnType extends { code: number; data: unknown }
+  ResponseType extends { code: number; data: unknown }
 >(
   routeWithHandler: RouteWithHandler<
     Param,
     Query,
     Data,
     Headers,
-    ReturnType
+    ResponseType
   >
 ): ((
   inputs: MatchInputs
-) => TE.TaskEither<MatchError, ReturnType>) =>
-  flow(
+) => TE.TaskEither<MatchError, ResponseType>) => {
+  return flow(
     matchRoute(routeWithHandler.route),
     TE.fromEither,
     TE.chain((matchedRoute) =>
       TE.fromTask(routeWithHandler.handler(matchedRoute))
     ),
     TE.chainEitherKW(
-      flow(
-        routeWithHandler.responseDecoder.decode,
-        E.mapLeft(validationError('response'))
+      validateResponse(
+        routeWithHandler.route.responseDecoder
       )
     )
   )
+}
+
+const validateResponse = <ResponseType>(
+  responseDecoder: D.Decoder<ResponseType>
+) => (resp: unknown) =>
+  responseDecoder.type === 'Decoder'
+    ? pipe(
+        resp,
+        responseDecoder.decoder.decode,
+        E.mapLeft(validationError('response'))
+      )
+    : E.left(noResponseValidator() as MatchError)
 
 export const response = <Code extends number, Data>(
   code: Code,

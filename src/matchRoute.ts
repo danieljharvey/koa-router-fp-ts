@@ -81,8 +81,14 @@ export type MatchInputs = {
   rawHeaders: Record<string, unknown>
 }
 
-export const matchRoute = <Param, Query, Data, Headers>(
-  route: Route<Param, Query, Data, Headers>
+export const matchRoute = <
+  ResponseType,
+  Param,
+  Query,
+  Data,
+  Headers
+>(
+  route: Route<ResponseType, Param, Query, Data, Headers>
 ) => ({
   url,
   method,

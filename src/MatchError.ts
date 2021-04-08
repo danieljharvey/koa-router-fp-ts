@@ -15,6 +15,11 @@ export const validationError = (
   message: reporter.report(E.left(errors)),
 })
 
+export const noResponseValidator = () => ({
+  type: 'NoResponseValidator' as const,
+})
+
 export type MatchError =
   | ReturnType<typeof noMatch>
   | ReturnType<ReturnType<typeof validationError>>
+  | ReturnType<typeof noResponseValidator>
