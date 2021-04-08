@@ -1,7 +1,7 @@
 import {
   runRouteWithHandler,
   routeWithHandler,
-  makeResponse,
+  respond,
 } from './Handler'
 import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
@@ -26,7 +26,7 @@ describe('Test the goddamn handlers', () => {
       pipe(getRoute, lit('healthz'), response(responseD)),
 
       () => {
-        return T.of(makeResponse(200, 'OK' as const))
+        return T.of(respond(200, 'OK' as const))
       }
     )
 
@@ -52,7 +52,7 @@ describe('Test the goddamn handlers', () => {
       pipe(getRoute, lit('healthz'), response(responseD)),
 
       () => {
-        return T.of(makeResponse(500 as any, 'OK' as const))
+        return T.of(respond(500 as any, 'OK' as const))
       }
     )
 
@@ -94,12 +94,12 @@ describe('Test the goddamn handlers', () => {
         )
         return matchingDogs.length > 0
           ? T.of(
-              makeResponse(
+              respond(
                 200,
                 matchingDogs.map(([name]) => name)
               )
             )
-          : T.of(makeResponse(400, 'No dogs found'))
+          : T.of(respond(400, 'No dogs found'))
       }
     )
 

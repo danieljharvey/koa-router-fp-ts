@@ -113,7 +113,7 @@ const validateResponse = <ResponseType>(
       )
     : E.left(noResponseValidator() as MatchError)
 
-export const makeResponse = <Code extends number, Data>(
+export const respond = <Code extends number, Data>(
   code: Code,
   data: Data
 ) => ({

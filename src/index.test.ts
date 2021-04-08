@@ -18,7 +18,7 @@ import * as t from 'io-ts'
 import { numberDecoder } from './decoders'
 import * as T from 'fp-ts/Task'
 import bodyParser from 'koa-bodyparser'
-import { routeWithHandler, makeResponse } from './Handler'
+import { routeWithHandler, respond } from './Handler'
 
 const withServer = async (
   router: Koa.Middleware,
@@ -51,7 +51,7 @@ const responseD = t.type({
 const healthz = routeWithHandler(
   pipe(getRoute, lit('healthz'), response(responseD)),
 
-  () => T.of(makeResponse(200, 'OK' as const))
+  () => T.of(respond(200, 'OK' as const))
 )
 
 describe('Testing with koa', () => {
@@ -99,7 +99,7 @@ describe('Testing with koa', () => {
       )
     ),
 
-    ({ params: { id } }) => T.of(makeResponse(200, id))
+    ({ params: { id } }) => T.of(respond(200, id))
   )
 
   it("Returns a 400 when the route matches but the params don't validate", async () => {
@@ -131,7 +131,7 @@ describe('Testing with koa', () => {
       )
     ),
 
-    ({ query: { id } }) => T.of(makeResponse(200, id))
+    ({ query: { id } }) => T.of(respond(200, id))
   )
 
   it('Returns a 200 when the route and query params match', async () => {
@@ -153,7 +153,7 @@ describe('Testing with koa', () => {
     ),
 
     ({ headers: { session } }) =>
-      T.of(makeResponse(200, session))
+      T.of(respond(200, session))
   )
 
   it('Returns a 200 when the route and headers match', async () => {
@@ -182,7 +182,7 @@ describe('Testing with koa', () => {
       )
     ),
     ({ data: { sessionId } }) =>
-      T.of(makeResponse(200, sessionId))
+      T.of(respond(200, sessionId))
   )
 
   it('Returns a 200 when the route and data matches', async () => {
