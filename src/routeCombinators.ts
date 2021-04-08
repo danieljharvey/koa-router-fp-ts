@@ -19,33 +19,33 @@ export const postRoute: Route = {
   method: O.some('POST'),
 }
 
-const literal = (literal: string): Route => ({
+const withLiteral = (literal: string): Route => ({
   ...emptyRoute,
   parts: [routeLiteral(literal)],
 })
 
 export const lit = (lit: string) =>
-  flow(combineRoutes(literal(lit)))
+  flow(combineRoutes(withLiteral(lit)))
 
-const response = <ResponseType>(
+const withResponse = <ResponseType>(
   decoder: t.Type<ResponseType>
 ): Route<ResponseType> => ({
   ...emptyRoute,
   responseDecoder: { type: 'Decoder', decoder },
 })
 
-export const addResponse = <ResponseType>(
+export const response = <ResponseType>(
   decoder: t.Type<ResponseType>
 ): CombineRoute<ResponseType> =>
-  flow(combineRoutes(response(decoder)))
+  flow(combineRoutes(withResponse(decoder)))
 
 export const param = <ParamName extends string, Param>(
   param: ParamName,
   decoder: t.Type<Param, unknown, unknown>
 ): CombineRoute<never, Record<ParamName, Param>> =>
-  flow(combineRoutes(parameter(param, decoder)))
+  flow(combineRoutes(withParam(param, decoder)))
 
-const parameter = <ParamName extends string, Param>(
+const withParam = <ParamName extends string, Param>(
   param: ParamName,
   decoder: t.Type<Param, unknown, unknown>
 ): Route<never, Record<ParamName, Param>> => ({

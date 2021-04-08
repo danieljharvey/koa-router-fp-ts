@@ -13,58 +13,58 @@ import * as D from './Decoder'
 import * as T from 'fp-ts/Task'
 import * as TE from 'fp-ts/TaskEither'
 import { flow, pipe } from 'fp-ts/lib/function'
-import * as t from 'io-ts'
+
 import * as E from 'fp-ts/Either'
 
 export type Handler<
+  ResponseType extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers,
-  ResponseType extends { code: number; data: unknown }
+  Headers
 > = (
   input: MatchedRoute<Param, Query, Data, Headers>
 ) => T.Task<ResponseType>
 
 export type RouteWithHandler<
+  ResponseType extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers,
-  ResponseType extends { code: number; data: unknown }
+  Headers
 > = {
   type: 'RouteWithHandler'
   route: Route<ResponseType, Param, Query, Data, Headers>
   handler: Handler<
+    ResponseType,
     Param,
     Query,
     Data,
-    Headers,
-    ResponseType
+    Headers
   >
 }
 
 export const routeWithHandler = <
+  ResponseType extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers,
-  ResponseType extends { code: number; data: unknown }
+  Headers
 >(
   route: Route<ResponseType, Param, Query, Data, Headers>,
   handler: Handler<
+    ResponseType,
     Param,
     Query,
     Data,
-    Headers,
-    ResponseType
+    Headers
   >
 ): RouteWithHandler<
+  ResponseType,
   Param,
   Query,
   Data,
-  Headers,
-  ResponseType
+  Headers
 > => ({
   type: 'RouteWithHandler',
   route,
@@ -72,18 +72,18 @@ export const routeWithHandler = <
 })
 
 export const runRouteWithHandler = <
+  ResponseType extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers,
-  ResponseType extends { code: number; data: unknown }
+  Headers
 >(
   routeWithHandler: RouteWithHandler<
+    ResponseType,
     Param,
     Query,
     Data,
-    Headers,
-    ResponseType
+    Headers
   >
 ): ((
   inputs: MatchInputs
@@ -113,7 +113,7 @@ const validateResponse = <ResponseType>(
       )
     : E.left(noResponseValidator() as MatchError)
 
-export const response = <Code extends number, Data>(
+export const makeResponse = <Code extends number, Data>(
   code: Code,
   data: Data
 ) => ({

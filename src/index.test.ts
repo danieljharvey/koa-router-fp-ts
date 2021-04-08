@@ -10,7 +10,7 @@ import {
   validateQuery,
   validateHeaders,
   validateData,
-  addResponse,
+  response,
 } from './routeCombinators'
 import request from 'supertest'
 import { pipe } from 'fp-ts/function'
@@ -18,7 +18,7 @@ import * as t from 'io-ts'
 import { numberDecoder } from './decoders'
 import * as T from 'fp-ts/Task'
 import bodyParser from 'koa-bodyparser'
-import { routeWithHandler, response } from './Handler'
+import { routeWithHandler, makeResponse } from './Handler'
 
 const withServer = async (
   router: Koa.Middleware,
@@ -49,9 +49,9 @@ const responseD = t.type({
 })
 
 const healthz = routeWithHandler(
-  pipe(getRoute, lit('healthz'), addResponse(responseD)),
+  pipe(getRoute, lit('healthz'), response(responseD)),
 
-  () => T.of(response(200, 'OK' as const))
+  () => T.of(makeResponse(200, 'OK' as const))
 )
 
 describe('Testing with koa', () => {
@@ -91,12 +91,15 @@ describe('Testing with koa', () => {
       getRoute,
       lit('user'),
       param('id', numberDecoder),
-      addResponse(
+      response(
         t.type({ code: t.literal(200), data: t.number })
+      ),
+      response(
+        t.type({ code: t.literal(400), data: t.string })
       )
     ),
 
-    ({ params: { id } }) => T.of(response(200, id))
+    ({ params: { id } }) => T.of(makeResponse(200, id))
   )
 
   it("Returns a 400 when the route matches but the params don't validate", async () => {
@@ -120,7 +123,7 @@ describe('Testing with koa', () => {
     pipe(
       getRoute,
       lit('user'),
-      addResponse(
+      response(
         t.type({ code: t.literal(200), data: t.number })
       ),
       combineRoutes(
@@ -128,7 +131,7 @@ describe('Testing with koa', () => {
       )
     ),
 
-    ({ query: { id } }) => T.of(response(200, id))
+    ({ query: { id } }) => T.of(makeResponse(200, id))
   )
 
   it('Returns a 200 when the route and query params match', async () => {
@@ -141,7 +144,7 @@ describe('Testing with koa', () => {
     pipe(
       getRoute,
       lit('user'),
-      addResponse(
+      response(
         t.type({ code: t.literal(200), data: t.number })
       ),
       combineRoutes(
@@ -150,7 +153,7 @@ describe('Testing with koa', () => {
     ),
 
     ({ headers: { session } }) =>
-      T.of(response(200, session))
+      T.of(makeResponse(200, session))
   )
 
   it('Returns a 200 when the route and headers match', async () => {
@@ -166,7 +169,7 @@ describe('Testing with koa', () => {
     pipe(
       postRoute,
       lit('user'),
-      addResponse(
+      response(
         t.type({ code: t.literal(200), data: t.number })
       ),
       combineRoutes(
@@ -179,7 +182,7 @@ describe('Testing with koa', () => {
       )
     ),
     ({ data: { sessionId } }) =>
-      T.of(response(200, sessionId))
+      T.of(makeResponse(200, sessionId))
   )
 
   it('Returns a 200 when the route and data matches', async () => {

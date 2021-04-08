@@ -1,13 +1,13 @@
 import {
   runRouteWithHandler,
   routeWithHandler,
-  response,
+  makeResponse,
 } from './Handler'
 import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
 import {
-  addResponse,
+  response,
   getRoute,
   lit,
   param,
@@ -23,14 +23,10 @@ describe('Test the goddamn handlers', () => {
     })
 
     const healthz = routeWithHandler(
-      pipe(
-        getRoute,
-        lit('healthz'),
-        addResponse(responseD)
-      ),
+      pipe(getRoute, lit('healthz'), response(responseD)),
 
       () => {
-        return T.of(response(200, 'OK' as const))
+        return T.of(makeResponse(200, 'OK' as const))
       }
     )
 
@@ -53,14 +49,10 @@ describe('Test the goddamn handlers', () => {
     })
 
     const healthz = routeWithHandler(
-      pipe(
-        getRoute,
-        lit('healthz'),
-        addResponse(responseD)
-      ),
+      pipe(getRoute, lit('healthz'), response(responseD)),
 
       () => {
-        return T.of(response(500 as any, 'OK' as const))
+        return T.of(makeResponse(500 as any, 'OK' as const))
       }
     )
 
@@ -94,7 +86,7 @@ describe('Test the goddamn handlers', () => {
         getRoute,
         lit('dogs'),
         param('age', numberDecoder),
-        addResponse(dogResponse)
+        response(dogResponse)
       ),
       ({ params: { age } }) => {
         const matchingDogs = Object.entries(dogAges).filter(
@@ -102,12 +94,12 @@ describe('Test the goddamn handlers', () => {
         )
         return matchingDogs.length > 0
           ? T.of(
-              response(
+              makeResponse(
                 200,
                 matchingDogs.map(([name]) => name)
               )
             )
-          : T.of(response(400, 'No dogs found'))
+          : T.of(makeResponse(400, 'No dogs found'))
       }
     )
 
