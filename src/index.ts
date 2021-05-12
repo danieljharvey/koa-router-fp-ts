@@ -6,18 +6,18 @@ import {
 import * as E from 'fp-ts/Either'
 
 export const router = <
+  ResponseType extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers,
-  ReturnType extends { code: number; data: unknown }
+  Headers
 >(
   routeWithHandler: RouteWithHandler<
+    ResponseType,
     Param,
     Query,
     Data,
-    Headers,
-    ReturnType
+    Headers
   >
 ) => async (
   ctx: Koa.Context,
