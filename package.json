@@ -10,7 +10,7 @@
     "axios": "^0.19.2",
     "fast-check": "^1.24.2",
     "fast-check-io-ts": "^0.4.0",
-    "fp-ts": "^2.9.5",
+    "fp-ts": "^2.10.0",
     "io-ts": "^2.2.16",
     "io-ts-reporters": "^1.2.2",
     "io-ts-types": "^0.5.15",
