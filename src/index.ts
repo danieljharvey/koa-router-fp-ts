@@ -55,7 +55,7 @@ export const router = (
 
   const allRoutesRun = pipe(
     neHandlers,
-    NE.map(routeHandler =>
+    NE.map((routeHandler) =>
       runRouteWithHandler(routeHandler)({
         url,
         method,
