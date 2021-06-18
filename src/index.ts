@@ -48,28 +48,29 @@ export const router = (
   const rawHeaders = ctx.request.headers
   const rawData = (ctx.request as any).body
 
-  const neHandlers = pipe(
+  const tryAllRoutes = pipe(
+    // all route handlers but the first
     routeHandlers,
-    A.prepend(routeHandler)
-  )
-
-  const allRoutesRun = pipe(
-    neHandlers,
-    NE.map((routeHandler) =>
+    // create NE array of handlers by prepending the first one
+    A.prepend(routeHandler),
+    // pass each one the route info
+    NE.map(routeHandler =>
       runRouteWithHandler(routeHandler)({
         url,
         method,
         rawData,
         rawHeaders,
       })
-    )
+    ),
+    // run each one in turn till one matches
+    neAltMany
   )
 
-  const result = await neAltMany(allRoutesRun)()
+  const result = await tryAllRoutes()
 
   if (E.isRight(result)) {
-    ctx.response.status = 200
-    ctx.response.body = 'Found'
+    ctx.response.status = result.right.code
+    ctx.response.body = result.right.data
 
     return
   } else {
