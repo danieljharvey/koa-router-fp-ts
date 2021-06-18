@@ -82,7 +82,7 @@ describe('Testing with koa', () => {
         .expect(200)
 
       expect(reply.status).toEqual(200)
-      expect(reply.text).toEqual('Found')
+      expect(reply.text).toEqual('OK')
     })
   })
 
@@ -106,7 +106,21 @@ describe('Testing with koa', () => {
           .expect(200)
 
         expect(reply.status).toEqual(200)
-        expect(reply.text).toEqual('Found')
+        expect(reply.text).toEqual('OK')
+      }
+    )
+  })
+
+  it('Returns a 201 when the readyz route is found', async () => {
+    await withServer(
+      router(readyz, healthz),
+      async (server) => {
+        const reply = await request(server)
+          .get('/readyz')
+          .expect(201)
+
+        expect(reply.status).toEqual(201)
+        expect(reply.text).toEqual('OK')
       }
     )
   })

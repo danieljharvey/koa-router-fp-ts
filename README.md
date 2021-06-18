@@ -1,9 +1,18 @@
-# hello
+# koa-router-fp-ts
 
-to set this up
+A WIP new router for `koa` that uses `io-ts` validators to check input before
+running to ensure validation is pushed to the very border of your application.
+
+Somewhat inspired by `Servant`.
+
+## Development install
 
 ```
 yarn install
 
-yarn ts-node src/index.ts
+# check those types
+yarn typescript:watch
+
+# run those tests
+yarn test:watch
 ```
