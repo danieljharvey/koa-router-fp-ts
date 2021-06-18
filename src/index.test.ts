@@ -43,13 +43,13 @@ const withServer = async (
   }
 }
 
-const responseD = t.type({
+const healthzDecoder = t.type({
   code: t.literal(200),
   data: t.literal('OK'),
 })
 
 const healthz = routeWithHandler(
-  pipe(getRoute, lit('healthz'), response(responseD)),
+  pipe(getRoute, lit('healthz'), response(healthzDecoder)),
 
   () => T.of(respond(200, 'OK' as const))
 )
@@ -84,6 +84,31 @@ describe('Testing with koa', () => {
       expect(reply.status).toEqual(200)
       expect(reply.text).toEqual('Found')
     })
+  })
+
+  const readyzDecoder = t.type({
+    code: t.literal(201),
+    data: t.literal('OK'),
+  })
+
+  const readyz = routeWithHandler(
+    pipe(getRoute, lit('readyz'), response(readyzDecoder)),
+
+    () => T.of(respond(201, 'OK' as const))
+  )
+
+  it("Returns a 200 when the healthz route is found but it's the second in the list of routes", async () => {
+    await withServer(
+      router(readyz, healthz),
+      async (server) => {
+        const reply = await request(server)
+          .get('/healthz')
+          .expect(200)
+
+        expect(reply.status).toEqual(200)
+        expect(reply.text).toEqual('Found')
+      }
+    )
   })
 
   const userId = routeWithHandler(
