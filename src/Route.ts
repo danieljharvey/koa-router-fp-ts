@@ -62,7 +62,7 @@ export const combineRoutes = <
   QueryB,
   DataB,
   HeadersB
-> => (a) => ({
+> => a => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
   paramDecoder: D.and(a.paramDecoder, b.paramDecoder),

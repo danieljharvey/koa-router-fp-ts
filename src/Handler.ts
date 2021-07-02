@@ -44,6 +44,32 @@ export type RouteWithHandler<
   >
 }
 
+export type HandlerInput<
+  ThisRoute
+> = ThisRoute extends Route<
+  any,
+  infer Param,
+  infer Query,
+  infer Data,
+  infer Headers
+>
+  ? MatchedRoute<Param, Query, Data, Headers>
+  : never
+
+export type HandlerForRoute<
+  ThisRoute
+> = ThisRoute extends Route<
+  infer ResponseType,
+  infer Param,
+  infer Query,
+  infer Data,
+  infer Headers
+>
+  ? ResponseType extends { code: number; data: unknown }
+    ? Handler<ResponseType, Param, Query, Data, Headers>
+    : never
+  : never
+
 export const routeWithHandler = <
   ResponseType extends { code: number; data: unknown },
   Param,
@@ -91,7 +117,7 @@ export const runRouteWithHandler = <
   return flow(
     matchRoute(routeWithHandler.route),
     TE.fromEither,
-    TE.chain((matchedRoute) =>
+    TE.chain(matchedRoute =>
       TE.fromTask(routeWithHandler.handler(matchedRoute))
     ),
     TE.chainEitherKW(
