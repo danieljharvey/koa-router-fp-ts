@@ -1,19 +1,18 @@
 import * as Koa from 'koa'
 import { Server } from 'http'
 import { router } from './index'
-import { combineRoutes } from './Route'
 import {
-  lit,
+  withLiteral,
   getRoute,
   postRoute,
-  param,
+  withParam,
   validateQuery,
   validateHeaders,
   validateData,
-  response,
+  withResponse,
 } from './routeCombinators'
 import request from 'supertest'
-import { pipe } from 'fp-ts/function'
+import { makeRoute } from './makeRoute'
 import * as t from 'io-ts'
 import { numberDecoder } from './decoders'
 import * as T from 'fp-ts/Task'
@@ -49,7 +48,11 @@ const healthzDecoder = t.type({
 })
 
 const healthz = routeWithHandler(
-  pipe(getRoute, lit('healthz'), response(healthzDecoder)),
+  makeRoute(
+    getRoute,
+    withLiteral('healthz'),
+    withResponse(healthzDecoder)
+  ),
 
   () => T.of(respond(200, 'OK' as const))
 )
@@ -92,7 +95,11 @@ describe('Testing with koa', () => {
   })
 
   const readyz = routeWithHandler(
-    pipe(getRoute, lit('readyz'), response(readyzDecoder)),
+    makeRoute(
+      getRoute,
+      withLiteral('readyz'),
+      withResponse(readyzDecoder)
+    ),
 
     () => T.of(respond(201, 'OK' as const))
   )
@@ -126,14 +133,14 @@ describe('Testing with koa', () => {
   })
 
   const userId = routeWithHandler(
-    pipe(
+    makeRoute(
       getRoute,
-      lit('user'),
-      param('id', numberDecoder),
-      response(
+      withLiteral('user'),
+      withParam('id', numberDecoder),
+      withResponse(
         t.type({ code: t.literal(200), data: t.number })
       ),
-      response(
+      withResponse(
         t.type({ code: t.literal(400), data: t.string })
       )
     ),
@@ -159,15 +166,13 @@ describe('Testing with koa', () => {
   })
 
   const userQuery = routeWithHandler(
-    pipe(
+    makeRoute(
       getRoute,
-      lit('user'),
-      response(
+      withLiteral('user'),
+      withResponse(
         t.type({ code: t.literal(200), data: t.number })
       ),
-      combineRoutes(
-        validateQuery(t.type({ id: numberDecoder }))
-      )
+      validateQuery(t.type({ id: numberDecoder }))
     ),
 
     ({ query: { id } }) => T.of(respond(200, id))
@@ -180,15 +185,13 @@ describe('Testing with koa', () => {
   })
 
   const userHeader = routeWithHandler(
-    pipe(
+    makeRoute(
       getRoute,
-      lit('user'),
-      response(
+      withLiteral('user'),
+      withResponse(
         t.type({ code: t.literal(200), data: t.number })
       ),
-      combineRoutes(
-        validateHeaders(t.type({ session: numberDecoder }))
-      )
+      validateHeaders(t.type({ session: numberDecoder }))
     ),
 
     ({ headers: { session } }) =>
@@ -205,19 +208,17 @@ describe('Testing with koa', () => {
   })
 
   const userPost = routeWithHandler(
-    pipe(
+    makeRoute(
       postRoute,
-      lit('user'),
-      response(
+      withLiteral('user'),
+      withResponse(
         t.type({ code: t.literal(200), data: t.number })
       ),
-      combineRoutes(
-        validateData(
-          t.type({
-            sessionId: t.number,
-            dog: t.boolean,
-          })
-        )
+      validateData(
+        t.type({
+          sessionId: t.number,
+          dog: t.boolean,
+        })
       )
     ),
     ({ data: { sessionId } }) =>

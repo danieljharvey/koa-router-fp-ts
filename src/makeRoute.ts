@@ -1,8 +1,4 @@
-import {
-  AnyRoute,
-  CombinedRoute,
-  combineRoutes,
-} from './Route'
+import { AnyRoute, CombinedRoute, combine } from './Route'
 
 type CR<A, B> = CombinedRoute<A, B>
 
@@ -74,7 +70,7 @@ export function makeRoute(
   ...as: unknown[]
 ): unknown {
   return as.reduce(
-    (all, val) => combineRoutes(all as any)(val as any),
+    (all, val) => combine(all as any, val as any),
     a
   )
 }

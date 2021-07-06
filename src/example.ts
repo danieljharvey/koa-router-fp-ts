@@ -109,26 +109,12 @@ const flattenTaskEither = <E, A>(
     )
   )
 
-const userRoute2 = makeRoute(
+const getUserRoute = makeRoute(
   getRoute,
   validateHeaders(t.type({ session: numberDecoder })),
   withLiteral('user'),
   withParam('id', numberDecoder),
   withResponse(
-    t.union([
-      userResponse,
-      userNotFoundResponse,
-      notAuthResponse,
-    ])
-  )
-)
-
-const getUserRoute = pipe(
-  getRoute,
-  getAuthHeaders,
-  lit('user'),
-  param('id', numberDecoder),
-  response(
     t.union([
       userResponse,
       userNotFoundResponse,

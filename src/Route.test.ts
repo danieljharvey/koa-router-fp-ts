@@ -1,61 +1,49 @@
-import { combineRoutes } from './Route'
 import {
   getRoute,
   postRoute,
-  lit,
-  param,
-  validateQuery,
+  withLiteral,
+  withParam,
   validateData,
   validateHeaders,
 } from './routeCombinators'
 import * as E from 'fp-ts/Either'
-import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
 import { numberDecoder, booleanDecoder } from './decoders'
 import { matchRoute } from './matchRoute'
+import { makeRoute } from './makeRoute'
 
-const healthz = pipe(getRoute, lit('healthz'))
+const healthz = makeRoute(getRoute, withLiteral('healthz'))
 
-const userName = pipe(getRoute, lit('user'), lit('name'))
-
-const userId = pipe(
+const userName = makeRoute(
   getRoute,
-  lit('user'),
-  param('id', numberDecoder)
+  withLiteral('user'),
+  withLiteral('name')
 )
 
-const userWithQuery = pipe(
+const userId = makeRoute(
   getRoute,
-  lit('users'),
-  combineRoutes(
-    validateQuery(
-      t.type({ id: numberDecoder, flag: booleanDecoder })
-    )
-  )
+  withLiteral('user'),
+  withParam('id', numberDecoder)
 )
 
-const userWithHeaders = pipe(
+const userWithHeaders = makeRoute(
   getRoute,
-  lit('users'),
-  combineRoutes(
-    validateHeaders(t.type({ sessionId: numberDecoder }))
-  )
+  withLiteral('users'),
+  validateHeaders(t.type({ sessionId: numberDecoder }))
 )
 
-const userWithData = pipe(
+const userWithData = makeRoute(
   postRoute,
-  lit('users'),
-  combineRoutes(
-    validateData(t.type({ dog: booleanDecoder }))
-  )
+  withLiteral('users'),
+  validateData(t.type({ dog: booleanDecoder }))
 )
 
 describe('Route matching', () => {
   it('Get after Post works is Get', () => {
-    const healthzGet = pipe(
+    const healthzGet = makeRoute(
       postRoute,
-      combineRoutes(getRoute),
-      lit('healthz')
+      getRoute,
+      withLiteral('healthz')
     )
     expect(
       E.isRight(
