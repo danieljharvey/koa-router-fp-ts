@@ -20,7 +20,7 @@ import * as T from 'fp-ts/Task'
 import bodyParser from 'koa-bodyparser'
 import { routeWithHandler, respond } from './Handler'
 
-const withServer = async (
+export const withServer = async (
   router: Koa.Middleware,
   fn: (server: Server) => Promise<unknown>
 ) => {

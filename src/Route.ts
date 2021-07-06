@@ -20,6 +20,33 @@ export type Route<
   headersDecoder: D.Decoder<Headers>
 }
 
+// useful for `A extends AnyRoute`
+export type AnyRoute = Route<never, any, any, any, any>
+
+export type CombinedRoute<A, B> = B extends Route<
+  infer ResponseTypeB,
+  infer ParamB,
+  infer QueryB,
+  infer DataB,
+  infer HeadersB
+>
+  ? A extends Route<
+      infer ResponseTypeA,
+      infer ParamA,
+      infer QueryA,
+      infer DataA,
+      infer HeadersA
+    >
+    ? Route<
+        ResponseTypeA | ResponseTypeB,
+        ParamA & ParamB,
+        QueryA & QueryB,
+        DataA & DataB,
+        HeadersA & HeadersB
+      >
+    : never
+  : never
+
 export type CombineRoute<
   ResponseTypeB,
   ParamB extends GenericRec = {},

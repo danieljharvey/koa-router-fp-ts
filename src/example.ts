@@ -1,10 +1,18 @@
-import { combineRoutes } from './Route'
+import {
+  AnyRoute,
+  CombinedRoute,
+  combineRoutes,
+} from './Route'
+import { makeRoute } from './makeRoute'
 import {
   lit,
   getRoute,
   param,
   validateHeaders,
   response,
+  withParam,
+  withLiteral,
+  withResponse,
 } from './routeCombinators'
 import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
@@ -70,7 +78,7 @@ const getUserHandler = ({
   UserResponse
 > => {
   if (id == 100) {
-    TE.right({
+    return TE.right({
       code: 200,
       data: {
         name: 'dog',
@@ -92,29 +100,33 @@ const getAuthHeaders = combineRoutes(
 // turn a TaskEither into a Task
 const flattenTaskEither = <E, A>(
   teHandler: TE.TaskEither<E, A>
-): T.Task<E | A> =>
+): T.Task<E & A> =>
   pipe(
     teHandler,
     TE.fold(
-      e => T.of(e) as T.Task<E | A>,
-      a => T.of(a) as T.Task<E | A>
+      e => T.of(e) as T.Task<E & A>,
+      a => T.of(a) as T.Task<E & A>
     )
   )
 
-// do one handler and then the other
-const chain = <InputA, InputB, Ea, A, Eb, B>(
-  teFirst: (input: InputA) => TE.TaskEither<Ea, A>,
-  teSecond: (input: InputB & A) => TE.TaskEither<Eb, B>
-) => (input: InputA & InputB): TE.TaskEither<Ea | Eb, B> =>
-  pipe(
-    teFirst(input),
-    TE.chainW(a => teSecond({ ...input, ...a }))
+const userRoute2 = makeRoute(
+  getRoute,
+  validateHeaders(t.type({ session: numberDecoder })),
+  withLiteral('user'),
+  withParam('id', numberDecoder),
+  withResponse(
+    t.union([
+      userResponse,
+      userNotFoundResponse,
+      notAuthResponse,
+    ])
   )
+)
 
 const getUserRoute = pipe(
   getRoute,
   getAuthHeaders,
-  lit('users'),
+  lit('user'),
   param('id', numberDecoder),
   response(
     t.union([
@@ -128,11 +140,13 @@ const getUserRoute = pipe(
 type UserRouteInput = HandlerInput<typeof getUserRoute>
 type UserHandler = HandlerForRoute<typeof getUserRoute>
 
-const handler: UserHandler = () => {
-  const bigguy = chain(checkAuth, getUserHandler)
-  console.log(bigguy)
-  return 'poo'
-}
+const handler: UserHandler = (input: UserRouteInput) =>
+  pipe(
+    checkAuth(input),
+    TE.chainW(a => getUserHandler({ ...input, ...a })),
+    flattenTaskEither
+  )
+
 export const getUser = routeWithHandler(
   getUserRoute,
   handler

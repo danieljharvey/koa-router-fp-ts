@@ -54,7 +54,7 @@ export const router = (
     // create NE array of handlers by prepending the first one
     A.prepend(routeHandler),
     // pass each one the route info
-    NE.map((routeHandler) =>
+    NE.map(routeHandler =>
       runRouteWithHandler(routeHandler)({
         url,
         method,
@@ -76,7 +76,9 @@ export const router = (
   } else {
     if (result.left.type === 'ValidationError') {
       ctx.response.status = 400
-      ctx.response.body = result.left.message
+      ctx.response.body = `${
+        result.left.which
+      }: ${result.left.message.join('\n')}`
       return
     }
   }
