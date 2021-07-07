@@ -7,13 +7,13 @@ import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
 import {
-  response,
+  withResponse,
   getRoute,
-  lit,
-  param,
+  withLiteral,
+  withParam,
 } from './routeCombinators'
-import { pipe } from 'fp-ts/lib/function'
 import { numberDecoder } from './decoders'
+import { makeRoute } from './makeRoute'
 
 describe('Test the goddamn handlers', () => {
   it('Uses the healthz handler successfully', async () => {
@@ -23,7 +23,11 @@ describe('Test the goddamn handlers', () => {
     })
 
     const healthz = routeWithHandler(
-      pipe(getRoute, lit('healthz'), response(responseD)),
+      makeRoute(
+        getRoute,
+        withLiteral('healthz'),
+        withResponse(responseD)
+      ),
 
       () => {
         return T.of(respond(200, 'OK' as const))
@@ -38,7 +42,7 @@ describe('Test the goddamn handlers', () => {
     })()
 
     expect(result).toEqual(
-      E.right({ code: 200, data: 'OK' })
+      E.right(E.right({ code: 200, data: 'OK' }))
     )
   })
 
@@ -49,7 +53,11 @@ describe('Test the goddamn handlers', () => {
     })
 
     const healthz = routeWithHandler(
-      pipe(getRoute, lit('healthz'), response(responseD)),
+      makeRoute(
+        getRoute,
+        withLiteral('healthz'),
+        withResponse(responseD)
+      ),
 
       () => {
         return T.of(respond(500 as any, 'OK' as const))
@@ -63,7 +71,12 @@ describe('Test the goddamn handlers', () => {
       rawHeaders: {},
     })()
 
-    expect(E.isLeft(result)).toBeTruthy()
+    expect(E.isRight(result)).toBeTruthy()
+    expect(
+      E.isRight(result) &&
+        E.isLeft(result.right) &&
+        result.right.left.type
+    ).toEqual('ValidationError')
   })
 
   it('Uses a doggy handler', async () => {
@@ -82,11 +95,11 @@ describe('Test the goddamn handlers', () => {
     ])
 
     const dogAgesHandler = routeWithHandler(
-      pipe(
+      makeRoute(
         getRoute,
-        lit('dogs'),
-        param('age', numberDecoder),
-        response(dogResponse)
+        withLiteral('dogs'),
+        withParam('age', numberDecoder),
+        withResponse(dogResponse)
       ),
       ({ params: { age } }) => {
         const matchingDogs = Object.entries(dogAges).filter(
@@ -112,7 +125,7 @@ describe('Test the goddamn handlers', () => {
       rawHeaders: {},
     })()
     expect(result).toEqual(
-      E.right({ code: 200, data: ['frank'] })
+      E.right(E.right({ code: 200, data: ['frank'] }))
     )
   })
 })

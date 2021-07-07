@@ -4,6 +4,9 @@ import * as D from './Decoder'
 type GenericRec = Record<string, unknown>
 import * as O from 'fp-ts/Option'
 
+// Route is the basic type under everything.
+// It is designed Monoidally so a Route is made by combining multiple Routes
+// together
 export type Route<
   ResponseType = never,
   Param = {},
@@ -20,49 +23,55 @@ export type Route<
   headersDecoder: D.Decoder<Headers>
 }
 
-export type CombineRoute<
-  ResponseTypeB,
-  ParamB extends GenericRec = {},
-  QueryB extends GenericRec = {},
-  DataB extends GenericRec = {},
-  HeadersB extends GenericRec = {}
-> = <
-  ResponseTypeA,
-  ParamA extends GenericRec = {},
-  QueryA extends GenericRec = {},
-  DataA extends GenericRec = {},
-  HeadersA extends GenericRec = {}
->(
-  route: Route<
-    ResponseTypeA,
-    ParamA,
-    QueryA,
-    DataA,
-    HeadersA
-  >
-) => Route<
-  ResponseTypeA | ResponseTypeB,
-  ParamA & ParamB,
-  QueryA & QueryB,
-  DataA & DataB,
-  HeadersA & HeadersB
->
+// useful for `A extends AnyRoute`
+export type AnyRoute =
+  | Route<any, any, any, any, any>
+  | Route<never, any, any, any, any>
 
-export const combineRoutes = <
+// get type of combining two Routes
+export type CombinedRoute<A, B> = B extends Route<
+  infer ResponseTypeB,
+  infer ParamB,
+  infer QueryB,
+  infer DataB,
+  infer HeadersB
+>
+  ? A extends Route<
+      infer ResponseTypeA,
+      infer ParamA,
+      infer QueryA,
+      infer DataA,
+      infer HeadersA
+    >
+    ? Route<
+        ResponseTypeA | ResponseTypeB,
+        ParamA & ParamB,
+        QueryA & QueryB,
+        DataA & DataB,
+        HeadersA & HeadersB
+      >
+    : never
+  : never
+
+// value-level combination of routes
+export const combine = <
+  ResponseTypeA,
+  ParamA extends GenericRec,
+  QueryA extends GenericRec,
+  DataA extends GenericRec,
+  HeadersA extends GenericRec,
   ResponseTypeB,
   ParamB extends GenericRec,
   QueryB extends GenericRec,
   DataB extends GenericRec,
   HeadersB extends GenericRec
 >(
+  a: Route<ResponseTypeA, ParamA, QueryA, DataA, HeadersA>,
   b: Route<ResponseTypeB, ParamB, QueryB, DataB, HeadersB>
-): CombineRoute<
-  ResponseTypeB,
-  ParamB,
-  QueryB,
-  DataB,
-  HeadersB
-> => (a) => ({
+): CombinedRoute<
+  Route<ResponseTypeA, ParamA, QueryA, DataA, HeadersA>,
+  Route<ResponseTypeB, ParamB, QueryB, DataB, HeadersB>
+> => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
   paramDecoder: D.and(a.paramDecoder, b.paramDecoder),

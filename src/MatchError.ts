@@ -2,13 +2,24 @@ import reporter from 'io-ts-reporters'
 import * as E from 'fp-ts/Either'
 import * as t from 'io-ts'
 
+export type MatchArea =
+  | 'headers'
+  | 'body'
+  | 'query'
+  | 'params'
+
 export const noMatch = (message: string) => ({
   type: 'NoMatchError' as const,
   message,
 })
 
 export const validationError = (
-  which: 'request' | 'response'
+  which:
+    | 'headers'
+    | 'body'
+    | 'query'
+    | 'params'
+    | 'response'
 ) => (errors: t.Errors) => ({
   type: 'ValidationError' as const,
   which,
@@ -19,7 +30,10 @@ export const noResponseValidator = () => ({
   type: 'NoResponseValidator' as const,
 })
 
-export type MatchError =
-  | ReturnType<typeof noMatch>
+export type NoMatchError = ReturnType<typeof noMatch>
+
+export type MatchValidationError =
   | ReturnType<ReturnType<typeof validationError>>
   | ReturnType<typeof noResponseValidator>
+
+export type MatchError = NoMatchError | MatchValidationError
