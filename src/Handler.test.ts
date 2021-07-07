@@ -42,7 +42,7 @@ describe('Test the goddamn handlers', () => {
     })()
 
     expect(result).toEqual(
-      E.right({ code: 200, data: 'OK' })
+      E.right(E.right({ code: 200, data: 'OK' }))
     )
   })
 
@@ -74,8 +74,8 @@ describe('Test the goddamn handlers', () => {
     expect(E.isRight(result)).toBeTruthy()
     expect(
       E.isRight(result) &&
-        'type' in result.right &&
-        result.right.type
+        E.isLeft(result.right) &&
+        result.right.left.type
     ).toEqual('ValidationError')
   })
 
@@ -125,7 +125,7 @@ describe('Test the goddamn handlers', () => {
       rawHeaders: {},
     })()
     expect(result).toEqual(
-      E.right({ code: 200, data: ['frank'] })
+      E.right(E.right({ code: 200, data: ['frank'] }))
     )
   })
 })

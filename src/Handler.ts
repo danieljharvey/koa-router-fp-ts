@@ -14,9 +14,8 @@ import {
 import * as D from './Decoder'
 import * as T from 'fp-ts/Task'
 import * as TE from 'fp-ts/TaskEither'
-import { flow, pipe } from 'fp-ts/lib/function'
-
 import * as E from 'fp-ts/Either'
+import { flow, pipe } from 'fp-ts/lib/function'
 
 export type Handler<
   ResponseType extends { code: number; data: unknown },
@@ -117,7 +116,7 @@ export const runRouteWithHandler = <
   inputs: MatchInputs
 ) => TE.TaskEither<
   NoMatchError,
-  ResponseType | MatchValidationError
+  E.Either<MatchValidationError, ResponseType>
 >) => {
   return flow(
     matchRoute(routeWithHandler.route),
@@ -130,8 +129,11 @@ export const runRouteWithHandler = <
         routeWithHandler.route.responseDecoder
       )
     ),
+    TE.map(E.right),
     TE.orElseW((e) =>
-      e.type === 'NoMatchError' ? TE.left(e) : TE.right(e)
+      e.type === 'NoMatchError'
+        ? TE.left(e)
+        : TE.right(E.left(e))
     )
   )
 }

@@ -4,7 +4,6 @@ import {
   runRouteWithHandler,
 } from './Handler'
 import * as E from 'fp-ts/Either'
-import { MatchError } from './MatchError'
 import { pipe } from 'fp-ts/lib/function'
 import * as NE from 'fp-ts/NonEmptyArray'
 import * as A from 'fp-ts/Array'
@@ -73,22 +72,23 @@ export const router = (
 
   // success is either a real result or matched route that then errored
   if (E.isRight(result)) {
-    if (result.right.type === 'ValidationError') {
-      ctx.response.status = 400
-      ctx.response.body = `${
-        result.right.which
-      }: ${result.right.message.join('\n')}`
-      return
-    } else if (
-      result.right.type === 'NoResponseValidator'
-    ) {
+    // we hit a route but it errored...
+    if (E.isLeft(result.right)) {
+      if (result.right.left.type === 'ValidationError') {
+        ctx.response.status = 400
+        ctx.response.body = `${
+          result.right.left.which
+        }: ${result.right.left.message.join('\n')}`
+        return
+      }
+
       ctx.response.status = 500
       ctx.response.body = 'Route has no response validator' // TODO - make this never happen by forcing return type validator in construction of Route
       return
     }
-
-    ctx.response.status = result.right.code
-    ctx.response.body = result.right.data
+    // we hit a route and it succeeded
+    ctx.response.status = result.right.right.code
+    ctx.response.body = result.right.right.data
 
     return
   }
