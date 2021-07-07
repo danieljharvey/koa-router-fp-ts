@@ -30,7 +30,10 @@ export const noResponseValidator = () => ({
   type: 'NoResponseValidator' as const,
 })
 
-export type MatchError =
-  | ReturnType<typeof noMatch>
+export type NoMatchError = ReturnType<typeof noMatch>
+
+export type MatchValidationError =
   | ReturnType<ReturnType<typeof validationError>>
   | ReturnType<typeof noResponseValidator>
+
+export type MatchError = NoMatchError | MatchValidationError

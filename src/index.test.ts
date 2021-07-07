@@ -28,7 +28,8 @@ export const withServer = async (
   app.use(bodyParser())
   app.use(router)
 
-  const PORT = process.env.PORT || 3000
+  // rando port between 3000 and 8000
+  const PORT = Math.floor(Math.random() * 3000) + 5000
 
   const server = app.listen(PORT)
 

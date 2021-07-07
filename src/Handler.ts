@@ -6,6 +6,8 @@ import {
 } from './matchRoute'
 import {
   MatchError,
+  NoMatchError,
+  MatchValidationError,
   noResponseValidator,
   validationError,
 } from './MatchError'
@@ -113,7 +115,10 @@ export const runRouteWithHandler = <
   >
 ): ((
   inputs: MatchInputs
-) => TE.TaskEither<MatchError, ResponseType>) => {
+) => TE.TaskEither<
+  NoMatchError,
+  ResponseType | MatchValidationError
+>) => {
   return flow(
     matchRoute(routeWithHandler.route),
     TE.fromEither,
@@ -124,6 +129,9 @@ export const runRouteWithHandler = <
       validateResponse(
         routeWithHandler.route.responseDecoder
       )
+    ),
+    TE.orElseW(e =>
+      e.type === 'NoMatchError' ? TE.left(e) : TE.right(e)
     )
   )
 }

@@ -71,7 +71,12 @@ describe('Test the goddamn handlers', () => {
       rawHeaders: {},
     })()
 
-    expect(E.isLeft(result)).toBeTruthy()
+    expect(E.isRight(result)).toBeTruthy()
+    expect(
+      E.isRight(result) &&
+        'type' in result.right &&
+        result.right.type
+    ).toEqual('ValidationError')
   })
 
   it('Uses a doggy handler', async () => {

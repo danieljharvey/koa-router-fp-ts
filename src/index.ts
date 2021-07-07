@@ -4,7 +4,7 @@ import {
   runRouteWithHandler,
 } from './Handler'
 import * as E from 'fp-ts/Either'
-
+import { MatchError } from './MatchError'
 import { pipe } from 'fp-ts/lib/function'
 import * as NE from 'fp-ts/NonEmptyArray'
 import * as A from 'fp-ts/Array'
@@ -18,7 +18,8 @@ const neAltMany = <E, A>(
   const rest = NE.tail(as) // this will be an array (that may be empty)
 
   // we try each ReaderTaskEither in turn
-  return rest.reduce(
+  // if we get a 'NoMatchError' we try another, if not, we return the error
+  const x = rest.reduce(
     (all, val) =>
       pipe(
         all,
@@ -26,6 +27,8 @@ const neAltMany = <E, A>(
       ),
     a
   )
+
+  return x
 }
 
 type AnyRouteWithHandler = RouteWithHandler<
@@ -68,18 +71,29 @@ export const router = (
 
   const result = await tryAllRoutes()
 
+  // success is either a real result or matched route that then errored
   if (E.isRight(result)) {
+    if (result.right.type === 'ValidationError') {
+      ctx.response.status = 400
+      ctx.response.body = `${
+        result.right.which
+      }: ${result.right.message.join('\n')}`
+      return
+    } else if (
+      result.right.type === 'NoResponseValidator'
+    ) {
+      ctx.response.status = 500
+      ctx.response.body = 'Route has no response validator' // TODO - make this never happen by forcing return type validator in construction of Route
+      return
+    }
+
     ctx.response.status = result.right.code
     ctx.response.body = result.right.data
 
     return
-  } else {
-    if (result.left.type === 'ValidationError') {
-      ctx.response.status = 400
-      ctx.response.body = `${
-        result.left.which
-      }: ${result.left.message.join('\n')}`
-      return
-    }
   }
+
+  ctx.response.status = 404
+  ctx.response.body = 'Not Found'
+  return
 }

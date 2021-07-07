@@ -1,12 +1,6 @@
-import { flow } from 'fp-ts/function'
 import * as t from 'io-ts'
 import { routeLiteral, routeParam } from './RouteItem'
-import {
-  Route,
-  CombineRoute,
-  emptyRoute,
-  combineRoutes,
-} from './Route'
+import { Route, emptyRoute } from './Route'
 import * as O from 'fp-ts/Option'
 
 export const getRoute: Route = {
@@ -24,26 +18,12 @@ export const withLiteral = (literal: string): Route => ({
   parts: [routeLiteral(literal)],
 })
 
-export const lit = (lit: string) =>
-  flow(combineRoutes(withLiteral(lit)))
-
 export const withResponse = <ResponseType>(
   decoder: t.Type<ResponseType>
 ): Route<ResponseType> => ({
   ...emptyRoute,
   responseDecoder: { type: 'Decoder', decoder },
 })
-
-export const response = <ResponseType>(
-  decoder: t.Type<ResponseType>
-): CombineRoute<ResponseType> =>
-  flow(combineRoutes(withResponse(decoder)))
-
-export const param = <ParamName extends string, Param>(
-  param: ParamName,
-  decoder: t.Type<Param, unknown, unknown>
-): CombineRoute<never, Record<ParamName, Param>> =>
-  flow(combineRoutes(withParam(param, decoder)))
 
 export const withParam = <ParamName extends string, Param>(
   param: ParamName,
