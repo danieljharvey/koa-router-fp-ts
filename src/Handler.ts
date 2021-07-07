@@ -122,7 +122,7 @@ export const runRouteWithHandler = <
   return flow(
     matchRoute(routeWithHandler.route),
     TE.fromEither,
-    TE.chain(matchedRoute =>
+    TE.chain((matchedRoute) =>
       TE.fromTask(routeWithHandler.handler(matchedRoute))
     ),
     TE.chainEitherKW(
@@ -130,7 +130,7 @@ export const runRouteWithHandler = <
         routeWithHandler.route.responseDecoder
       )
     ),
-    TE.orElseW(e =>
+    TE.orElseW((e) =>
       e.type === 'NoMatchError' ? TE.left(e) : TE.right(e)
     )
   )

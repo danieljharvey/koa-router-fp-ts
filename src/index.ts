@@ -57,7 +57,7 @@ export const router = (
     // create NE array of handlers by prepending the first one
     A.prepend(routeHandler),
     // pass each one the route info
-    NE.map(routeHandler =>
+    NE.map((routeHandler) =>
       runRouteWithHandler(routeHandler)({
         url,
         method,

@@ -7,7 +7,7 @@ const app = router(getUser, getUsers)
 
 describe('getUser', () => {
   it('Fails when no auth headers sent', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server).get('/user/123/')
 
       expect(reply.status).toEqual(400)
@@ -17,7 +17,7 @@ describe('getUser', () => {
     })
   })
   it('Fails when wrong format of auth headers sent', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/user/123/')
         .set({ session: 'wrong' })
@@ -30,7 +30,7 @@ describe('getUser', () => {
   })
 
   it('Fails when wrong auth headers sent', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/user/123/')
         .set({ session: 99999 })
@@ -41,7 +41,7 @@ describe('getUser', () => {
   })
 
   it('Correct auth but cannot find user', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/user/123/')
         .set({ session: 123 })
@@ -52,7 +52,7 @@ describe('getUser', () => {
   })
 
   it('Found user', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/user/100/')
         .set({ session: 123 })
@@ -69,7 +69,7 @@ describe('getUser', () => {
 
 describe('getUsers', () => {
   it('Fails when no auth headers sent', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server).get('/users/')
 
       expect(reply.status).toEqual(400)
@@ -79,7 +79,7 @@ describe('getUsers', () => {
     })
   })
   it('Fails when wrong format of auth headers sent', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/users/')
         .set({ session: 'wrong' })
@@ -92,7 +92,7 @@ describe('getUsers', () => {
   })
 
   it('Fails when wrong auth headers sent', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/users/')
         .set({ session: 99999 })
@@ -103,7 +103,7 @@ describe('getUsers', () => {
   })
 
   it('Found users', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/users/')
         .set({ session: 123 })

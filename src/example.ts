@@ -113,7 +113,7 @@ const getUserHandler = ({
 
 export const getUser = routeWithHandler(
   getUserRoute,
-  input =>
+  (input) =>
     pipe(
       checkAuth(input),
       TE.chainW(getUserHandler),
@@ -149,7 +149,7 @@ const getUsersHandler = ({
   HandlerInput<
     typeof getUsersRoute
   >): T.Task<UsersResponse> => {
-  const users = Object.values(userData).map(user => ({
+  const users = Object.values(userData).map((user) => ({
     ...user,
     requestedBy: userName,
   }))
@@ -162,7 +162,7 @@ const getUsersHandler = ({
 
 export const getUsers = routeWithHandler(
   getUsersRoute,
-  input =>
+  (input) =>
     pipe(
       checkAuth(input),
       TE.chainTaskK(getUsersHandler),
@@ -177,7 +177,7 @@ const flattenTaskEither = <E, A>(
   pipe(
     teHandler,
     TE.fold(
-      e => T.of(e) as T.Task<E & A>,
-      a => T.of(a) as T.Task<E & A>
+      (e) => T.of(e) as T.Task<E & A>,
+      (a) => T.of(a) as T.Task<E & A>
     )
   )
