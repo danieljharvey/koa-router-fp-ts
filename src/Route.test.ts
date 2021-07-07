@@ -1,10 +1,10 @@
 import {
-  getRoute,
-  postRoute,
-  withLiteral,
-  withParam,
-  validateData,
-  validateHeaders,
+  get,
+  post,
+  lit,
+  param,
+  data,
+  headers,
 } from './routeCombinators'
 import * as E from 'fp-ts/Either'
 import * as t from 'io-ts'
@@ -12,39 +12,31 @@ import { numberDecoder, booleanDecoder } from './decoders'
 import { matchRoute } from './matchRoute'
 import { makeRoute } from './makeRoute'
 
-const healthz = makeRoute(getRoute, withLiteral('healthz'))
+const healthz = makeRoute(get, lit('healthz'))
 
-const userName = makeRoute(
-  getRoute,
-  withLiteral('user'),
-  withLiteral('name')
-)
+const userName = makeRoute(get, lit('user'), lit('name'))
 
 const userId = makeRoute(
-  getRoute,
-  withLiteral('user'),
-  withParam('id', numberDecoder)
+  get,
+  lit('user'),
+  param('id', numberDecoder)
 )
 
 const userWithHeaders = makeRoute(
-  getRoute,
-  withLiteral('users'),
-  validateHeaders(t.type({ sessionId: numberDecoder }))
+  get,
+  lit('users'),
+  headers(t.type({ sessionId: numberDecoder }))
 )
 
 const userWithData = makeRoute(
-  postRoute,
-  withLiteral('users'),
-  validateData(t.type({ dog: booleanDecoder }))
+  post,
+  lit('users'),
+  data(t.type({ dog: booleanDecoder }))
 )
 
 describe('Route matching', () => {
   it('Get after Post works is Get', () => {
-    const healthzGet = makeRoute(
-      postRoute,
-      getRoute,
-      withLiteral('healthz')
-    )
+    const healthzGet = makeRoute(post, get, lit('healthz'))
     expect(
       E.isRight(
         matchRoute(healthzGet)({

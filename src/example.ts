@@ -1,10 +1,10 @@
 import { makeRoute } from './makeRoute'
 import {
-  getRoute,
-  validateHeaders,
-  withParam,
-  withLiteral,
-  withResponse,
+  get,
+  headers,
+  param,
+  lit,
+  response,
 } from './routeCombinators'
 import { pipe } from 'fp-ts/function'
 import * as t from 'io-ts'
@@ -67,11 +67,11 @@ const userResponse = t.type({
 type UserResponse = t.TypeOf<typeof userResponse>
 
 const getUserRoute = makeRoute(
-  getRoute,
-  validateHeaders(t.type({ session: numberDecoder })),
-  withLiteral('user'),
-  withParam('id', numberDecoder),
-  withResponse(
+  get,
+  headers(t.type({ session: numberDecoder })),
+  lit('user'),
+  param('id', numberDecoder),
+  response(
     t.union([
       userResponse,
       userNotFoundResponse,
@@ -137,10 +137,10 @@ const usersResponse = t.type({
 type UsersResponse = t.TypeOf<typeof usersResponse>
 
 const getUsersRoute = makeRoute(
-  getRoute,
-  validateHeaders(t.type({ session: numberDecoder })),
-  withLiteral('users'),
-  withResponse(t.union([usersResponse, notAuthResponse]))
+  get,
+  headers(t.type({ session: numberDecoder })),
+  lit('users'),
+  response(t.union([usersResponse, notAuthResponse]))
 )
 
 const getUsersHandler = ({
