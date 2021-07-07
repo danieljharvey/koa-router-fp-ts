@@ -2,14 +2,14 @@ import * as Koa from 'koa'
 import { Server } from 'http'
 import { router } from './index'
 import {
-  withLiteral,
-  getRoute,
-  postRoute,
-  withParam,
-  validateQuery,
-  validateHeaders,
-  validateData,
-  withResponse,
+  lit,
+  get,
+  post,
+  param,
+  query,
+  headers,
+  data,
+  response,
 } from './routeCombinators'
 import request from 'supertest'
 import { makeRoute } from './makeRoute'
@@ -49,11 +49,7 @@ const healthzDecoder = t.type({
 })
 
 const healthz = routeWithHandler(
-  makeRoute(
-    getRoute,
-    withLiteral('healthz'),
-    withResponse(healthzDecoder)
-  ),
+  makeRoute(get, lit('healthz'), response(healthzDecoder)),
 
   () => T.of(respond(200, 'OK' as const))
 )
@@ -96,11 +92,7 @@ describe('Testing with koa', () => {
   })
 
   const readyz = routeWithHandler(
-    makeRoute(
-      getRoute,
-      withLiteral('readyz'),
-      withResponse(readyzDecoder)
-    ),
+    makeRoute(get, lit('readyz'), response(readyzDecoder)),
 
     () => T.of(respond(201, 'OK' as const))
   )
@@ -135,13 +127,13 @@ describe('Testing with koa', () => {
 
   const userId = routeWithHandler(
     makeRoute(
-      getRoute,
-      withLiteral('user'),
-      withParam('id', numberDecoder),
-      withResponse(
+      get,
+      lit('user'),
+      param('id', numberDecoder),
+      response(
         t.type({ code: t.literal(200), data: t.number })
       ),
-      withResponse(
+      response(
         t.type({ code: t.literal(400), data: t.string })
       )
     ),
@@ -168,12 +160,12 @@ describe('Testing with koa', () => {
 
   const userQuery = routeWithHandler(
     makeRoute(
-      getRoute,
-      withLiteral('user'),
-      withResponse(
+      get,
+      lit('user'),
+      response(
         t.type({ code: t.literal(200), data: t.number })
       ),
-      validateQuery(t.type({ id: numberDecoder }))
+      query(t.type({ id: numberDecoder }))
     ),
 
     ({ query: { id } }) => T.of(respond(200, id))
@@ -187,12 +179,12 @@ describe('Testing with koa', () => {
 
   const userHeader = routeWithHandler(
     makeRoute(
-      getRoute,
-      withLiteral('user'),
-      withResponse(
+      get,
+      lit('user'),
+      response(
         t.type({ code: t.literal(200), data: t.number })
       ),
-      validateHeaders(t.type({ session: numberDecoder }))
+      headers(t.type({ session: numberDecoder }))
     ),
 
     ({ headers: { session } }) =>
@@ -210,12 +202,12 @@ describe('Testing with koa', () => {
 
   const userPost = routeWithHandler(
     makeRoute(
-      postRoute,
-      withLiteral('user'),
-      withResponse(
+      post,
+      lit('user'),
+      response(
         t.type({ code: t.literal(200), data: t.number })
       ),
-      validateData(
+      data(
         t.type({
           sessionId: t.number,
           dog: t.boolean,

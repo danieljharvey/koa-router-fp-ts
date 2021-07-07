@@ -7,10 +7,10 @@ import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
 import {
-  withResponse,
-  getRoute,
-  withLiteral,
-  withParam,
+  response,
+  get,
+  lit,
+  param,
 } from './routeCombinators'
 import { numberDecoder } from './decoders'
 import { makeRoute } from './makeRoute'
@@ -23,11 +23,7 @@ describe('Test the goddamn handlers', () => {
     })
 
     const healthz = routeWithHandler(
-      makeRoute(
-        getRoute,
-        withLiteral('healthz'),
-        withResponse(responseD)
-      ),
+      makeRoute(get, lit('healthz'), response(responseD)),
 
       () => {
         return T.of(respond(200, 'OK' as const))
@@ -53,11 +49,7 @@ describe('Test the goddamn handlers', () => {
     })
 
     const healthz = routeWithHandler(
-      makeRoute(
-        getRoute,
-        withLiteral('healthz'),
-        withResponse(responseD)
-      ),
+      makeRoute(get, lit('healthz'), response(responseD)),
 
       () => {
         return T.of(respond(500 as any, 'OK' as const))
@@ -96,10 +88,10 @@ describe('Test the goddamn handlers', () => {
 
     const dogAgesHandler = routeWithHandler(
       makeRoute(
-        getRoute,
-        withLiteral('dogs'),
-        withParam('age', numberDecoder),
-        withResponse(dogResponse)
+        get,
+        lit('dogs'),
+        param('age', numberDecoder),
+        response(dogResponse)
       ),
       ({ params: { age } }) => {
         const matchingDogs = Object.entries(dogAges).filter(
