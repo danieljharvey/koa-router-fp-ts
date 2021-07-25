@@ -1,16 +1,18 @@
-import { makeRoute } from './makeRoute'
 import {
+  HandlerInput,
+  routeWithTaskHandler,
+  routeWithTaskEitherHandler,
+  makeRoute,
   get,
   headers,
   param,
   lit,
   response,
-} from './routeCombinators'
-import { pipe } from 'fp-ts/function'
+  numberDecoder,
+} from '../../index'
+import { flow } from 'fp-ts/function'
 import * as t from 'io-ts'
-import { numberDecoder } from './decoders'
 import * as T from 'fp-ts/Task'
-import { HandlerInput, routeWithHandler } from './Handler'
 
 import * as TE from 'fp-ts/TaskEither'
 
@@ -111,14 +113,9 @@ const getUserHandler = ({
       })
 }
 
-export const getUser = routeWithHandler(
+export const getUser = routeWithTaskEitherHandler(
   getUserRoute,
-  (input) =>
-    pipe(
-      checkAuth(input),
-      TE.chainW(getUserHandler),
-      flattenTaskEither
-    )
+  flow(checkAuth, TE.chainW(getUserHandler))
 )
 
 // /users/
@@ -149,7 +146,7 @@ const getUsersHandler = ({
   HandlerInput<
     typeof getUsersRoute
   >): T.Task<UsersResponse> => {
-  const users = Object.values(userData).map((user) => ({
+  const users = Object.values(userData).map(user => ({
     ...user,
     requestedBy: userName,
   }))
@@ -160,24 +157,7 @@ const getUsersHandler = ({
   })
 }
 
-export const getUsers = routeWithHandler(
+export const getUsers = routeWithTaskEitherHandler(
   getUsersRoute,
-  (input) =>
-    pipe(
-      checkAuth(input),
-      TE.chainTaskK(getUsersHandler),
-      flattenTaskEither
-    )
+  flow(checkAuth, TE.chainTaskK(getUsersHandler))
 )
-
-// turn a TaskEither into a Task
-const flattenTaskEither = <E, A>(
-  teHandler: TE.TaskEither<E, A>
-): T.Task<E & A> =>
-  pipe(
-    teHandler,
-    TE.fold(
-      (e) => T.of(e) as T.Task<E & A>,
-      (a) => T.of(a) as T.Task<E & A>
-    )
-  )
