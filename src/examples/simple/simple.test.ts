@@ -7,7 +7,7 @@ const app = serveRoutes(getUser, getUsers)
 
 describe('getUser', () => {
   it('Cannot find user', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server).get('/user/123/')
 
       expect(reply.status).toEqual(400)
@@ -16,7 +16,7 @@ describe('getUser', () => {
   })
 
   it('Found user', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server).get('/user/100/')
 
       expect(reply.status).toEqual(200)
@@ -30,7 +30,7 @@ describe('getUser', () => {
 
 describe('getUsers', () => {
   it('Found users', async () => {
-    await withServer(app, async server => {
+    await withServer(app, async (server) => {
       const reply = await request(server).get('/users/')
 
       expect(reply.status).toEqual(200)

@@ -181,11 +181,11 @@ export const routeWithTaskEitherHandler = <
   handler: flow(
     teHandler,
     TE.fold(
-      e =>
+      (e) =>
         T.of(e) as T.Task<
           FailureResponseType | SuccessResponseType
         >,
-      a =>
+      (a) =>
         T.of(a) as T.Task<
           FailureResponseType | SuccessResponseType
         >
@@ -220,7 +220,7 @@ export const routeWithPromiseHandler = <
 > => ({
   type: 'RouteWithHandler',
   route,
-  handler: flow(promiseHandler, p => () => p),
+  handler: flow(promiseHandler, (p) => () => p),
 })
 
 export const routeWithPureHandler = <
@@ -294,11 +294,11 @@ export const routeWithEitherHandler = <
   handler: flow(
     eitherHandler,
     E.fold(
-      e =>
+      (e) =>
         T.of(e) as T.Task<
           FailureResponseType | SuccessResponseType
         >,
-      a =>
+      (a) =>
         T.of(a) as T.Task<
           FailureResponseType | SuccessResponseType
         >

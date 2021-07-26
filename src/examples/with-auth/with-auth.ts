@@ -146,7 +146,7 @@ const getUsersHandler = ({
   HandlerInput<
     typeof getUsersRoute
   >): T.Task<UsersResponse> => {
-  const users = Object.values(userData).map(user => ({
+  const users = Object.values(userData).map((user) => ({
     ...user,
     requestedBy: userName,
   }))
