@@ -1,8 +1,5 @@
-import {
-  runRouteWithHandler,
-  routeWithHandler,
-  respond,
-} from './Handler'
+import { routeWithTaskHandler } from './Handler'
+import { runRouteWithHandler, respond } from './runRoute'
 import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
@@ -22,7 +19,7 @@ describe('Test the goddamn handlers', () => {
       data: t.literal('OK'),
     })
 
-    const healthz = routeWithHandler(
+    const healthz = routeWithTaskHandler(
       makeRoute(get, lit('healthz'), response(responseD)),
 
       () => {
@@ -48,7 +45,7 @@ describe('Test the goddamn handlers', () => {
       data: t.literal('OK'),
     })
 
-    const healthz = routeWithHandler(
+    const healthz = routeWithTaskHandler(
       makeRoute(get, lit('healthz'), response(responseD)),
 
       () => {
@@ -86,7 +83,7 @@ describe('Test the goddamn handlers', () => {
       t.type({ code: t.literal(400), data: t.string }),
     ])
 
-    const dogAgesHandler = routeWithHandler(
+    const dogAgesHandler = routeWithTaskHandler(
       makeRoute(
         get,
         lit('dogs'),

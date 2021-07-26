@@ -1,9 +1,9 @@
-import { getUser, getUsers } from './example'
-import { withServer } from './index.test'
-import { router } from './index'
+import { getUser, getUsers } from './with-auth'
+import { withServer } from '../../index.test'
+import { serveRoutes } from '../../index'
 import request from 'supertest'
 
-const app = router(getUser, getUsers)
+const app = serveRoutes(getUser, getUsers)
 
 describe('getUser', () => {
   it('Fails when no auth headers sent', async () => {
