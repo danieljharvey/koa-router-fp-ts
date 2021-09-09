@@ -1,4 +1,5 @@
-import * as O from 'fp-ts/Option'
+import { OpenAPIV3 } from 'openapi-types'
+
 import {
   withDecoder,
   createOpenAPISpec,
@@ -6,47 +7,99 @@ import {
   pathItemForRoute,
 } from './openapi'
 import * as t from 'io-ts'
-import { response, routeWithHandler } from '../Handler'
-import { getRoute, lit } from '../routeCombinators'
-import { pipe } from 'fp-ts/function'
+import {
+  makeRoute,
+  lit,
+  get,
+  response,
+  routeWithTaskHandler,
+  respond,
+} from '../index'
+import * as E from 'fp-ts/Either'
+
 import * as T from 'fp-ts/Task'
+import {
+  OpenAPIState,
+  initialState,
+  toEither,
+  evaluate,
+} from './types'
 
-const healthDecoder = t.type({
-  code: t.literal(200),
-  data: t.string,
-})
+const healthzDecoder = t.type(
+  {
+    code: t.literal(200),
+    data: t.string,
+  },
+  'Healthz'
+)
 
-const healthz = routeWithHandler(
-  pipe(getRoute, lit('healthz')),
-  healthDecoder,
-  () => {
-    return T.of(response(200, 'OK'))
-  }
+const healthz = routeWithTaskHandler(
+  makeRoute(get, lit('healthz'), response(healthzDecoder)),
+  () => T.of(respond(200, 'OK' as const))
+)
+
+const user = t.type(
+  {
+    userId: t.number,
+    firstName: t.string,
+    surname: t.string,
+  },
+  'User'
+)
+
+const userSuccessDecoder = t.type(
+  {
+    code: t.literal(200),
+    data: t.type({
+      message: t.string,
+      users: t.array(user),
+    }),
+  },
+  'UserSuccess'
+)
+
+const userHandler = routeWithTaskHandler(
+  makeRoute(get, lit('user'), response(userSuccessDecoder)),
+  () =>
+    T.of(
+      respond(200, {
+        message: 'OK',
+        users: [
+          { userId: 1, firstName: 'Mr', surname: 'Dog' },
+        ],
+      })
+    )
 )
 
 describe('createOpenAPISpec', () => {
   it('withDecoder primitives', () => {
-    expect(withDecoder(t.string)).toEqual(
-      O.some({ type: 'string' })
+    expect(evaluate(withDecoder(t.string))).toEqual(
+      E.right({ type: 'string' })
     )
-    expect(withDecoder(t.boolean)).toEqual(
-      O.some({ type: 'boolean' })
+    expect(evaluate(withDecoder(t.boolean))).toEqual(
+      E.right({ type: 'boolean' })
     )
-    expect(withDecoder(t.number)).toEqual(
-      O.some({ type: 'number' })
+    expect(evaluate(withDecoder(t.number))).toEqual(
+      E.right({ type: 'number' })
     )
-    expect(withDecoder(t.Int)).toEqual(
-      O.some({ type: 'integer' })
+    expect(evaluate(withDecoder(t.Int))).toEqual(
+      E.right({ type: 'integer' })
     )
   })
   it('withDecoder combinators', () => {
-    expect(withDecoder(t.array(t.string))).toEqual(
-      O.some({ type: 'array', items: { type: 'string' } })
+    expect(
+      evaluate(withDecoder(t.array(t.string)))
+    ).toEqual(
+      E.right({ type: 'array', items: { type: 'string' } })
     )
     expect(
-      withDecoder(t.type({ one: t.string, two: t.number }))
+      evaluate(
+        withDecoder(
+          t.type({ one: t.string, two: t.number })
+        )
+      )
     ).toEqual(
-      O.some({
+      E.right({
         type: 'object',
         properties: {
           one: { type: 'string' },
@@ -62,24 +115,85 @@ describe('createOpenAPISpec', () => {
     console.log(JSON.stringify(json))
     expect(json).not.toBeNull()
   })
+
   it('responsesObject', () => {
-    const resp = responsesObject(healthDecoder)
-    console.log(JSON.stringify(resp))
-    expect(resp).toEqual({
-      responses: { '200': { description: 'Success' } },
-      namedSchemas: [
-        {
-          name: 'Success',
-          schema: { type: 'string' },
-        },
-      ],
-    })
-  })
-  it('pathItemForRoute', () => {
-    const { url } = pathItemForRoute(
-      healthz.route,
-      healthz.responseDecoder
+    const resp = toEither(
+      responsesObject(healthzDecoder),
+      initialState
     )
-    expect(url).toEqual('/healthz')
+    expect(resp).toEqual(
+      E.right([
+        { '200': { description: 'Healthz' } },
+        {
+          schemas: [
+            {
+              name: 'Healthz',
+              schema: { type: 'string' },
+            },
+          ],
+        },
+      ])
+    )
+  })
+
+  it('responsesObject with named decoders', () => {
+    const resp = toEither(
+      responsesObject(userSuccessDecoder),
+      initialState
+    )
+
+    const json = createOpenAPISpec(userHandler)
+
+    console.log(JSON.stringify(json))
+
+    const expected: [
+      OpenAPIV3.ResponsesObject,
+      OpenAPIState
+    ] = [
+      { '200': { description: 'UserSuccess' } },
+      {
+        schemas: [
+          {
+            name: 'User',
+            schema: {
+              type: 'object',
+              properties: {
+                firstName: { type: 'string' },
+                surname: { type: 'string' },
+                userId: { type: 'number' },
+              },
+            },
+          },
+
+          {
+            name: 'UserSuccess',
+            schema: {
+              type: 'object',
+              properties: {
+                message: { type: 'string' },
+                users: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/User',
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    ]
+
+    expect(resp).toEqual(E.right(expected))
+  })
+
+  it('pathItemForRoute', () => {
+    const result = evaluate(
+      pathItemForRoute(
+        healthz.route,
+        healthz.route.responseDecoder
+      )
+    )
+    expect((result as any).right.url).toEqual('/healthz')
   })
 })
