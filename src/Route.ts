@@ -1,13 +1,13 @@
-import * as O from 'fp-ts/Option';
+import * as O from 'fp-ts/Option'
 
-import { RouteItem } from './RouteItem';
-import { Method, combineMethod } from './Method';
-import * as D from './Decoder';
-import * as E from './Encoder';
+import { RouteItem } from './RouteItem'
+import { Method, combineMethod } from './Method'
+import * as D from './Decoder'
+import * as E from './Encoder'
 
-export type GenericRec = Record<string, unknown>;
+export type GenericRec = Record<string, unknown>
 
-export type EmptyRec = Record<string, never>;
+export type EmptyRec = Record<string, never>
 
 // Route is the basic type under everything.
 // It is designed Monoidally so a Route is made by combining multiple Routes
@@ -18,21 +18,21 @@ export type Route<
   Param = EmptyRec,
   Query = EmptyRec,
   Data = EmptyRec,
-  Headers = EmptyRec,
+  Headers = EmptyRec
 > = {
-  method: O.Option<Method>;
-  parts: RouteItem[];
-  responseEncoder: E.Encoder<ResponseInput, ResponseOutput>;
-  paramDecoder: D.Decoder<Param>;
-  queryDecoder: D.Decoder<Query>;
-  dataDecoder: D.Decoder<Data>;
-  headersDecoder: D.Decoder<Headers>;
-};
+  method: O.Option<Method>
+  parts: RouteItem[]
+  responseEncoder: E.Encoder<ResponseInput, ResponseOutput>
+  paramDecoder: D.Decoder<Param>
+  queryDecoder: D.Decoder<Query>
+  dataDecoder: D.Decoder<Data>
+  headersDecoder: D.Decoder<Headers>
+}
 
 // useful for `A extends AnyRoute`
 export type AnyRoute =
   | Route<any, any, any, any, any, any>
-  | Route<never, never, any, any, any, any>;
+  | Route<never, never, any, any, any, any>
 
 // get type of combining two Routes
 export type CombinedRoute<A, B> = B extends Route<
@@ -60,7 +60,7 @@ export type CombinedRoute<A, B> = B extends Route<
         HeadersA & HeadersB
       >
     : never
-  : never;
+  : never
 
 // value-level combination of routes
 export const combine = <
@@ -75,13 +75,41 @@ export const combine = <
   ParamB extends GenericRec,
   QueryB extends GenericRec,
   DataB extends GenericRec,
-  HeadersB extends GenericRec,
+  HeadersB extends GenericRec
 >(
-  a: Route<ResponseInputA, ResponseOutputA, ParamA, QueryA, DataA, HeadersA>,
-  b: Route<ResponseInputB, ResponseOutputB, ParamB, QueryB, DataB, HeadersB>,
+  a: Route<
+    ResponseInputA,
+    ResponseOutputA,
+    ParamA,
+    QueryA,
+    DataA,
+    HeadersA
+  >,
+  b: Route<
+    ResponseInputB,
+    ResponseOutputB,
+    ParamB,
+    QueryB,
+    DataB,
+    HeadersB
+  >
 ): CombinedRoute<
-  Route<ResponseInputA, ResponseOutputA, ParamA, QueryA, DataA, HeadersA>,
-  Route<ResponseInputB, ResponseOutputB, ParamB, QueryB, DataB, HeadersB>
+  Route<
+    ResponseInputA,
+    ResponseOutputA,
+    ParamA,
+    QueryA,
+    DataA,
+    HeadersA
+  >,
+  Route<
+    ResponseInputB,
+    ResponseOutputB,
+    ParamB,
+    QueryB,
+    DataB,
+    HeadersB
+  >
 > => ({
   method: combineMethod(a.method, b.method),
   parts: [...a.parts, ...b.parts],
@@ -89,8 +117,11 @@ export const combine = <
   queryDecoder: D.and(a.queryDecoder, b.queryDecoder),
   dataDecoder: D.and(a.dataDecoder, b.dataDecoder),
   headersDecoder: D.and(a.headersDecoder, b.headersDecoder),
-  responseEncoder: E.or(a.responseEncoder, b.responseEncoder),
-});
+  responseEncoder: E.or(
+    a.responseEncoder,
+    b.responseEncoder
+  ),
+})
 
 export const emptyRoute: Route = {
   method: O.none,
@@ -100,4 +131,4 @@ export const emptyRoute: Route = {
   queryDecoder: { type: 'NoDecoder' },
   dataDecoder: { type: 'NoDecoder' },
   headersDecoder: { type: 'NoDecoder' },
-};
+}

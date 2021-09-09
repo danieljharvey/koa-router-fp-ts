@@ -1,15 +1,15 @@
-import * as TE from 'fp-ts/TaskEither';
-import * as E from 'fp-ts/Either';
-import { flow, pipe } from 'fp-ts/lib/function';
+import * as TE from 'fp-ts/TaskEither'
+import * as E from 'fp-ts/Either'
+import { flow, pipe } from 'fp-ts/lib/function'
 
-import { MatchInputs, matchRoute } from './matchRoute';
+import { MatchInputs, matchRoute } from './matchRoute'
 import {
   MatchError,
   MatchValidationError,
   noResponseValidator,
-} from './MatchError';
-import { RouteWithHandler } from './Handler';
-import * as Enc from './Encoder';
+} from './MatchError'
+import { RouteWithHandler } from './Handler'
+import * as Enc from './Encoder'
 
 export const runRouteWithHandler = <
   ResponseInput extends { code: number; data: unknown },
@@ -17,7 +17,7 @@ export const runRouteWithHandler = <
   Param,
   Query,
   Data,
-  Headers,
+  Headers
 >(
   routeWithHandler: RouteWithHandler<
     ResponseInput,
@@ -26,9 +26,9 @@ export const runRouteWithHandler = <
     Query,
     Data,
     Headers
-  >,
+  >
 ): ((
-  inputs: MatchInputs,
+  inputs: MatchInputs
 ) => TE.TaskEither<
   MatchError,
   E.Either<MatchValidationError, ResponseOutput>
@@ -37,26 +37,38 @@ export const runRouteWithHandler = <
     matchRoute(routeWithHandler.route),
     TE.fromEither,
     TE.chain((matchedRoute) =>
-      TE.fromTask(routeWithHandler.handler(matchedRoute)),
+      TE.fromTask(routeWithHandler.handler(matchedRoute))
     ),
-    TE.chainEitherKW(serialiseResponse(routeWithHandler.route.responseEncoder)),
+    TE.chainEitherKW(
+      serialiseResponse(
+        routeWithHandler.route.responseEncoder
+      )
+    ),
     TE.map(E.right),
     TE.orElseW((e) =>
-      e.type === 'NoMatchError' ? TE.left(e) : TE.right(E.left(e)),
-    ),
-  );
+      e.type === 'NoMatchError'
+        ? TE.left(e)
+        : TE.right(E.left(e))
+    )
+  )
 
 // serialise response
-const serialiseResponse =
-  <ResponseInput, ResponseOutput>(
-    responseEncoder: Enc.Encoder<ResponseInput, ResponseOutput>,
-  ) =>
-  (resp: ResponseInput): E.Either<MatchError, ResponseOutput> =>
-    responseEncoder.type === 'Encoder'
-      ? pipe(resp, responseEncoder.encoder.encode, E.right)
-      : E.left(noResponseValidator() as MatchError);
+const serialiseResponse = <ResponseInput, ResponseOutput>(
+  responseEncoder: Enc.Encoder<
+    ResponseInput,
+    ResponseOutput
+  >
+) => (
+  resp: ResponseInput
+): E.Either<MatchError, ResponseOutput> =>
+  responseEncoder.type === 'Encoder'
+    ? pipe(resp, responseEncoder.encoder.encode, E.right)
+    : E.left(noResponseValidator() as MatchError)
 
-export const respond = <Code extends number, Data>(code: Code, data: Data) => ({
+export const respond = <Code extends number, Data>(
+  code: Code,
+  data: Data
+) => ({
   code,
   data,
-});
+})

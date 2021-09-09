@@ -1,32 +1,43 @@
-import * as E from 'fp-ts/Either';
-import * as t from 'io-ts';
+import * as E from 'fp-ts/Either'
+import * as t from 'io-ts'
 
-import { get, post, lit, param, data, headers } from './routeCombinators';
-import { numberDecoder, booleanDecoder } from './decoders';
-import { matchRoute } from './matchRoute';
-import { makeRoute } from './makeRoute';
+import {
+  get,
+  post,
+  lit,
+  param,
+  data,
+  headers,
+} from './routeCombinators'
+import { numberDecoder, booleanDecoder } from './decoders'
+import { matchRoute } from './matchRoute'
+import { makeRoute } from './makeRoute'
 
-const healthz = makeRoute(get, lit('healthz'));
+const healthz = makeRoute(get, lit('healthz'))
 
-const userName = makeRoute(get, lit('user'), lit('name'));
+const userName = makeRoute(get, lit('user'), lit('name'))
 
-const userId = makeRoute(get, lit('user'), param('id', numberDecoder));
+const userId = makeRoute(
+  get,
+  lit('user'),
+  param('id', numberDecoder)
+)
 
 const userWithHeaders = makeRoute(
   get,
   lit('users'),
-  headers(t.type({ sessionId: numberDecoder })),
-);
+  headers(t.type({ sessionId: numberDecoder }))
+)
 
 const userWithData = makeRoute(
   post,
   lit('users'),
-  data(t.type({ dog: booleanDecoder })),
-);
+  data(t.type({ dog: booleanDecoder }))
+)
 
 describe('route matching', () => {
   it('get after Post works is Get', () => {
-    const healthzGet = makeRoute(post, get, lit('healthz'));
+    const healthzGet = makeRoute(post, get, lit('healthz'))
     expect(
       E.isRight(
         matchRoute(healthzGet)({
@@ -34,10 +45,10 @@ describe('route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        }),
-      ),
-    ).toBeTruthy();
-  });
+        })
+      )
+    ).toBeTruthy()
+  })
 
   it('healthz endpoint', () => {
     expect(
@@ -46,15 +57,15 @@ describe('route matching', () => {
         method: 'get',
         rawData: {},
         rawHeaders: {},
-      }),
+      })
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: {},
         headers: {},
-      }),
-    );
+      })
+    )
     expect(
       E.isRight(
         matchRoute(healthz)({
@@ -62,9 +73,9 @@ describe('route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        }),
-      ),
-    ).toBeFalsy();
+        })
+      )
+    ).toBeFalsy()
     expect(
       E.isRight(
         matchRoute(healthz)({
@@ -72,10 +83,10 @@ describe('route matching', () => {
           method: 'post',
           rawData: {},
           rawHeaders: {},
-        }),
-      ),
-    ).toBeFalsy();
-  });
+        })
+      )
+    ).toBeFalsy()
+  })
   it('username endpoint', () => {
     expect(
       matchRoute(userName)({
@@ -83,15 +94,15 @@ describe('route matching', () => {
         method: 'get',
         rawData: {},
         rawHeaders: {},
-      }),
+      })
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: {},
         headers: {},
-      }),
-    );
+      })
+    )
     expect(
       E.isRight(
         matchRoute(userName)({
@@ -99,10 +110,10 @@ describe('route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        }),
-      ),
-    ).toBeFalsy();
-  });
+        })
+      )
+    ).toBeFalsy()
+  })
 
   it('userId endpoint', () => {
     expect(
@@ -111,15 +122,15 @@ describe('route matching', () => {
         method: 'get',
         rawData: {},
         rawHeaders: {},
-      }),
+      })
     ).toEqual(
       E.right({
         params: { id: 123 },
         query: {},
         data: {},
         headers: {},
-      }),
-    );
+      })
+    )
     expect(
       E.isRight(
         matchRoute(userId)({
@@ -127,9 +138,9 @@ describe('route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        }),
-      ),
-    ).toBeFalsy();
+        })
+      )
+    ).toBeFalsy()
 
     expect(
       E.isRight(
@@ -138,10 +149,10 @@ describe('route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        }),
-      ),
-    ).toBeFalsy();
-  });
+        })
+      )
+    ).toBeFalsy()
+  })
 
   it('userWithHeaders endpoint', () => {
     expect(
@@ -150,15 +161,15 @@ describe('route matching', () => {
         method: 'get',
         rawData: {},
         rawHeaders: { sessionId: '123' },
-      }),
+      })
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: {},
         headers: { sessionId: 123 },
-      }),
-    );
+      })
+    )
     expect(
       E.isRight(
         matchRoute(userWithHeaders)({
@@ -166,9 +177,9 @@ describe('route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: { sessionId: 'sdfsdf' },
-        }),
-      ),
-    ).toBeFalsy();
+        })
+      )
+    ).toBeFalsy()
 
     expect(
       E.isRight(
@@ -177,10 +188,10 @@ describe('route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        }),
-      ),
-    ).toBeFalsy();
-  });
+        })
+      )
+    ).toBeFalsy()
+  })
 
   it('userWithData endpoint', () => {
     expect(
@@ -189,15 +200,15 @@ describe('route matching', () => {
         method: 'post',
         rawData: { dog: 'true' },
         rawHeaders: {},
-      }),
+      })
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: { dog: true },
         headers: {},
-      }),
-    );
+      })
+    )
     expect(
       E.isRight(
         matchRoute(userWithData)({
@@ -205,9 +216,9 @@ describe('route matching', () => {
           method: 'post',
           rawData: { sessionId: 'sdfsdf' },
           rawHeaders: {},
-        }),
-      ),
-    ).toBeFalsy();
+        })
+      )
+    ).toBeFalsy()
 
     expect(
       E.isRight(
@@ -216,8 +227,8 @@ describe('route matching', () => {
           method: 'post',
           rawData: { dog: 1 },
           rawHeaders: {},
-        }),
-      ),
-    ).toBeFalsy();
-  });
-});
+        })
+      )
+    ).toBeFalsy()
+  })
+})
