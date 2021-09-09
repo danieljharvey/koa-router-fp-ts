@@ -1,7 +1,7 @@
-import * as O from 'fp-ts/Option'
+import * as O from 'fp-ts/Option';
 
-export type Method = 'GET' | 'POST'
+export type Method = 'GET' | 'POST';
 
-const optionMonoid = O.getLastMonoid<Method>()
+const optionMonoid = O.getLastMonoid<Method>();
 
-export const combineMethod = optionMonoid.concat
+export const combineMethod = optionMonoid.concat;

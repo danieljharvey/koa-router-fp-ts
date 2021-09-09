@@ -1,42 +1,32 @@
-import {
-  get,
-  post,
-  lit,
-  param,
-  data,
-  headers,
-} from './routeCombinators'
-import * as E from 'fp-ts/Either'
-import * as t from 'io-ts'
-import { numberDecoder, booleanDecoder } from './decoders'
-import { matchRoute } from './matchRoute'
-import { makeRoute } from './makeRoute'
+import * as E from 'fp-ts/Either';
+import * as t from 'io-ts';
 
-const healthz = makeRoute(get, lit('healthz'))
+import { get, post, lit, param, data, headers } from './routeCombinators';
+import { numberDecoder, booleanDecoder } from './decoders';
+import { matchRoute } from './matchRoute';
+import { makeRoute } from './makeRoute';
 
-const userName = makeRoute(get, lit('user'), lit('name'))
+const healthz = makeRoute(get, lit('healthz'));
 
-const userId = makeRoute(
-  get,
-  lit('user'),
-  param('id', numberDecoder)
-)
+const userName = makeRoute(get, lit('user'), lit('name'));
+
+const userId = makeRoute(get, lit('user'), param('id', numberDecoder));
 
 const userWithHeaders = makeRoute(
   get,
   lit('users'),
-  headers(t.type({ sessionId: numberDecoder }))
-)
+  headers(t.type({ sessionId: numberDecoder })),
+);
 
 const userWithData = makeRoute(
   post,
   lit('users'),
-  data(t.type({ dog: booleanDecoder }))
-)
+  data(t.type({ dog: booleanDecoder })),
+);
 
-describe('Route matching', () => {
-  it('Get after Post works is Get', () => {
-    const healthzGet = makeRoute(post, get, lit('healthz'))
+describe('route matching', () => {
+  it('get after Post works is Get', () => {
+    const healthzGet = makeRoute(post, get, lit('healthz'));
     expect(
       E.isRight(
         matchRoute(healthzGet)({
@@ -44,27 +34,27 @@ describe('Route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        })
-      )
-    ).toBeTruthy()
-  })
+        }),
+      ),
+    ).toBeTruthy();
+  });
 
-  it('Healthz endpoint', () => {
+  it('healthz endpoint', () => {
     expect(
       matchRoute(healthz)({
         url: '/healthz',
         method: 'get',
         rawData: {},
         rawHeaders: {},
-      })
+      }),
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: {},
         headers: {},
-      })
-    )
+      }),
+    );
     expect(
       E.isRight(
         matchRoute(healthz)({
@@ -72,9 +62,9 @@ describe('Route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        })
-      )
-    ).toBeFalsy()
+        }),
+      ),
+    ).toBeFalsy();
     expect(
       E.isRight(
         matchRoute(healthz)({
@@ -82,26 +72,26 @@ describe('Route matching', () => {
           method: 'post',
           rawData: {},
           rawHeaders: {},
-        })
-      )
-    ).toBeFalsy()
-  })
-  it('Username endpoint', () => {
+        }),
+      ),
+    ).toBeFalsy();
+  });
+  it('username endpoint', () => {
     expect(
       matchRoute(userName)({
         url: '/user/name',
         method: 'get',
         rawData: {},
         rawHeaders: {},
-      })
+      }),
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: {},
         headers: {},
-      })
-    )
+      }),
+    );
     expect(
       E.isRight(
         matchRoute(userName)({
@@ -109,10 +99,10 @@ describe('Route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        })
-      )
-    ).toBeFalsy()
-  })
+        }),
+      ),
+    ).toBeFalsy();
+  });
 
   it('userId endpoint', () => {
     expect(
@@ -121,15 +111,15 @@ describe('Route matching', () => {
         method: 'get',
         rawData: {},
         rawHeaders: {},
-      })
+      }),
     ).toEqual(
       E.right({
         params: { id: 123 },
         query: {},
         data: {},
         headers: {},
-      })
-    )
+      }),
+    );
     expect(
       E.isRight(
         matchRoute(userId)({
@@ -137,9 +127,9 @@ describe('Route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        })
-      )
-    ).toBeFalsy()
+        }),
+      ),
+    ).toBeFalsy();
 
     expect(
       E.isRight(
@@ -148,10 +138,10 @@ describe('Route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        })
-      )
-    ).toBeFalsy()
-  })
+        }),
+      ),
+    ).toBeFalsy();
+  });
 
   it('userWithHeaders endpoint', () => {
     expect(
@@ -160,15 +150,15 @@ describe('Route matching', () => {
         method: 'get',
         rawData: {},
         rawHeaders: { sessionId: '123' },
-      })
+      }),
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: {},
         headers: { sessionId: 123 },
-      })
-    )
+      }),
+    );
     expect(
       E.isRight(
         matchRoute(userWithHeaders)({
@@ -176,9 +166,9 @@ describe('Route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: { sessionId: 'sdfsdf' },
-        })
-      )
-    ).toBeFalsy()
+        }),
+      ),
+    ).toBeFalsy();
 
     expect(
       E.isRight(
@@ -187,10 +177,10 @@ describe('Route matching', () => {
           method: 'get',
           rawData: {},
           rawHeaders: {},
-        })
-      )
-    ).toBeFalsy()
-  })
+        }),
+      ),
+    ).toBeFalsy();
+  });
 
   it('userWithData endpoint', () => {
     expect(
@@ -199,15 +189,15 @@ describe('Route matching', () => {
         method: 'post',
         rawData: { dog: 'true' },
         rawHeaders: {},
-      })
+      }),
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: { dog: true },
         headers: {},
-      })
-    )
+      }),
+    );
     expect(
       E.isRight(
         matchRoute(userWithData)({
@@ -215,9 +205,9 @@ describe('Route matching', () => {
           method: 'post',
           rawData: { sessionId: 'sdfsdf' },
           rawHeaders: {},
-        })
-      )
-    ).toBeFalsy()
+        }),
+      ),
+    ).toBeFalsy();
 
     expect(
       E.isRight(
@@ -226,8 +216,8 @@ describe('Route matching', () => {
           method: 'post',
           rawData: { dog: 1 },
           rawHeaders: {},
-        })
-      )
-    ).toBeFalsy()
-  })
-})
+        }),
+      ),
+    ).toBeFalsy();
+  });
+});

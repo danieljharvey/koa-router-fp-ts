@@ -1,46 +1,50 @@
-import { getUser, getUsers } from './simple'
-import { withServer } from '../../index.test'
-import { serveRoutes } from '../../index'
-import request from 'supertest'
+import request from 'supertest';
 
-const app = serveRoutes(getUser, getUsers)
+import { withServer } from '../../helpers/withServer';
+import { serveRoutes } from '../../index';
+
+import { getUser, getUsers } from './simple';
+
+const app = serveRoutes(getUser, getUsers);
 
 describe('getUser', () => {
-  it('Cannot find user', async () => {
+  it('cannot find user', async () => {
     await withServer(app, async (server) => {
-      const reply = await request(server).get('/user/123/')
+      const reply = await request(server).get('/user/123/');
 
-      expect(reply.status).toEqual(400)
-      expect(reply.text).toEqual('User not found')
-    })
-  })
+      expect(reply.status).toEqual(400);
+      expect(reply.text).toEqual('User not found');
+    });
+  });
 
-  it('Found user', async () => {
+  it('found user', async () => {
     await withServer(app, async (server) => {
-      const reply = await request(server).get('/user/100/')
+      const reply = await request(server).get('/user/100/');
 
-      expect(reply.status).toEqual(200)
+      expect(reply.status).toEqual(200);
       expect(reply.body).toEqual({
         name: 'dog',
         age: 100,
-      })
-    })
-  })
-})
+        birthday: '2020-02-01T01:01:01.000Z',
+      });
+    });
+  });
+});
 
 describe('getUsers', () => {
-  it('Found users', async () => {
+  it('found users', async () => {
     await withServer(app, async (server) => {
-      const reply = await request(server).get('/users/')
+      const reply = await request(server).get('/users/');
 
-      expect(reply.status).toEqual(200)
+      expect(reply.status).toEqual(200);
       expect(reply.body).toEqual([
         {
           name: 'dog',
           age: 100,
+          birthday: '2020-02-01T01:01:01.000Z',
         },
-        { name: 'cat', age: 3 },
-      ])
-    })
-  })
-})
+        { name: 'cat', age: 3, birthday: '2020-02-01T01:01:01.000Z' },
+      ]);
+    });
+  });
+});

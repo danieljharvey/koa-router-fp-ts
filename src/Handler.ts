@@ -1,95 +1,86 @@
-import { Route } from './Route'
-import { MatchedRoute } from './matchRoute'
-import * as T from 'fp-ts/Task'
-import * as TE from 'fp-ts/TaskEither'
-import * as E from 'fp-ts/Either'
-import { flow } from 'fp-ts/lib/function'
+import * as T from 'fp-ts/Task';
+import * as TE from 'fp-ts/TaskEither';
+import * as E from 'fp-ts/Either';
+import { flow } from 'fp-ts/lib/function';
+
+import { MatchedRoute } from './matchRoute';
+import { Route } from './Route';
 
 export type TaskHandler<
-  ResponseType extends { code: number; data: unknown },
+  ResponseInput extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers
-> = (
-  input: MatchedRoute<Param, Query, Data, Headers>
-) => T.Task<ResponseType>
+  Headers,
+> = (input: MatchedRoute<Param, Query, Data, Headers>) => T.Task<ResponseInput>;
 
 export type TaskEitherHandler<
-  SuccessResponseType extends {
-    code: number
-    data: unknown
+  SuccessResponseInput extends {
+    code: number;
+    data: unknown;
   },
-  FailureResponseType extends {
-    code: number
-    data: unknown
+  FailureResponseInput extends {
+    code: number;
+    data: unknown;
   },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 > = (
-  input: MatchedRoute<Param, Query, Data, Headers>
-) => TE.TaskEither<FailureResponseType, SuccessResponseType>
+  input: MatchedRoute<Param, Query, Data, Headers>,
+) => TE.TaskEither<FailureResponseInput, SuccessResponseInput>;
 
 export type PromiseHandler<
-  ResponseType extends { code: number; data: unknown },
+  ResponseInput extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 > = (
-  input: MatchedRoute<Param, Query, Data, Headers>
-) => Promise<ResponseType>
+  input: MatchedRoute<Param, Query, Data, Headers>,
+) => Promise<ResponseInput>;
 
 export type PureHandler<
-  ResponseType extends { code: number; data: unknown },
+  ResponseInput extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers
-> = (
-  input: MatchedRoute<Param, Query, Data, Headers>
-) => ResponseType
+  Headers,
+> = (input: MatchedRoute<Param, Query, Data, Headers>) => ResponseInput;
 
 export type EitherHandler<
-  SuccessResponseType extends {
-    code: number
-    data: unknown
+  SuccessResponseInput extends {
+    code: number;
+    data: unknown;
   },
-  FailureResponseType extends {
-    code: number
-    data: unknown
+  FailureResponseInput extends {
+    code: number;
+    data: unknown;
   },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 > = (
-  input: MatchedRoute<Param, Query, Data, Headers>
-) => E.Either<FailureResponseType, SuccessResponseType>
+  input: MatchedRoute<Param, Query, Data, Headers>,
+) => E.Either<FailureResponseInput, SuccessResponseInput>;
 
 export type RouteWithHandler<
-  ResponseType extends { code: number; data: unknown },
+  ResponseInput extends { code: number; data: unknown },
+  ResponseOutput extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 > = {
-  type: 'RouteWithHandler'
-  route: Route<ResponseType, Param, Query, Data, Headers>
-  handler: TaskHandler<
-    ResponseType,
-    Param,
-    Query,
-    Data,
-    Headers
-  >
-}
+  type: 'RouteWithHandler';
+  route: Route<ResponseInput, ResponseOutput, Param, Query, Data, Headers>;
+  handler: TaskHandler<ResponseInput, Param, Query, Data, Headers>;
+};
 
-export type HandlerInput<
-  ThisRoute
-> = ThisRoute extends Route<
+export type HandlerInput<ThisRoute> = ThisRoute extends Route<
+  any,
   any,
   infer Param,
   infer Query,
@@ -97,39 +88,43 @@ export type HandlerInput<
   infer Headers
 >
   ? MatchedRoute<Param, Query, Data, Headers>
-  : never
+  : never;
 
-export type HandlerForRoute<
-  ThisRoute
-> = ThisRoute extends Route<
-  infer ResponseType,
+export type RouteResponse<ThisRoute> = ThisRoute extends Route<
+  infer ResponseInput,
+  any,
+  any,
+  any,
+  any
+>
+  ? ResponseInput
+  : never;
+
+export type HandlerForRoute<ThisRoute> = ThisRoute extends Route<
+  infer ResponseInput,
   infer Param,
   infer Query,
   infer Data,
   infer Headers
 >
-  ? ResponseType extends { code: number; data: unknown }
-    ? TaskHandler<ResponseType, Param, Query, Data, Headers>
+  ? ResponseInput extends { code: number; data: unknown }
+    ? TaskHandler<ResponseInput, Param, Query, Data, Headers>
     : never
-  : never
+  : never;
 
 export const routeWithTaskHandler = <
-  ResponseType extends { code: number; data: unknown },
+  ResponseInput extends { code: number; data: unknown },
+  ResponseOutput extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 >(
-  route: Route<ResponseType, Param, Query, Data, Headers>,
-  handler: TaskHandler<
-    ResponseType,
-    Param,
-    Query,
-    Data,
-    Headers
-  >
+  route: Route<ResponseInput, ResponseOutput, Param, Query, Data, Headers>,
+  handler: TaskHandler<ResponseInput, Param, Query, Data, Headers>,
 ): RouteWithHandler<
-  ResponseType,
+  ResponseInput,
+  ResponseOutput,
   Param,
   Query,
   Data,
@@ -138,39 +133,42 @@ export const routeWithTaskHandler = <
   type: 'RouteWithHandler',
   route,
   handler,
-})
+});
 
 export const routeWithTaskEitherHandler = <
-  SuccessResponseType extends {
-    code: number
-    data: unknown
+  SuccessResponseInput extends {
+    code: number;
+    data: unknown;
   },
-  FailureResponseType extends {
-    code: number
-    data: unknown
+  FailureResponseInput extends {
+    code: number;
+    data: unknown;
   },
+  ResponseOutput extends { code: number; data: unknown },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 >(
   route: Route<
-    SuccessResponseType | FailureResponseType,
+    SuccessResponseInput | FailureResponseInput,
+    ResponseOutput,
     Param,
     Query,
     Data,
     Headers
   >,
   teHandler: TaskEitherHandler<
-    SuccessResponseType,
-    FailureResponseType,
+    SuccessResponseInput,
+    FailureResponseInput,
     Param,
     Query,
     Data,
     Headers
-  >
+  >,
 ): RouteWithHandler<
-  SuccessResponseType | FailureResponseType,
+  SuccessResponseInput | FailureResponseInput,
+  ResponseOutput,
   Param,
   Query,
   Data,
@@ -181,38 +179,31 @@ export const routeWithTaskEitherHandler = <
   handler: flow(
     teHandler,
     TE.fold(
-      (e) =>
-        T.of(e) as T.Task<
-          FailureResponseType | SuccessResponseType
-        >,
-      (a) =>
-        T.of(a) as T.Task<
-          FailureResponseType | SuccessResponseType
-        >
-    )
+      (e) => T.of(e) as T.Task<FailureResponseInput | SuccessResponseInput>,
+      (a) => T.of(a) as T.Task<FailureResponseInput | SuccessResponseInput>,
+    ),
   ),
-})
+});
 
 export const routeWithPromiseHandler = <
-  ResponseType extends {
-    code: number
-    data: unknown
+  ResponseInput extends {
+    code: number;
+    data: unknown;
+  },
+  ResponseOutput extends {
+    code: number;
+    data: unknown;
   },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 >(
-  route: Route<ResponseType, Param, Query, Data, Headers>,
-  promiseHandler: PromiseHandler<
-    ResponseType,
-    Param,
-    Query,
-    Data,
-    Headers
-  >
+  route: Route<ResponseInput, ResponseOutput, Param, Query, Data, Headers>,
+  promiseHandler: PromiseHandler<ResponseInput, Param, Query, Data, Headers>,
 ): RouteWithHandler<
-  ResponseType,
+  ResponseInput,
+  ResponseOutput,
   Param,
   Query,
   Data,
@@ -221,28 +212,27 @@ export const routeWithPromiseHandler = <
   type: 'RouteWithHandler',
   route,
   handler: flow(promiseHandler, (p) => () => p),
-})
+});
 
 export const routeWithPureHandler = <
-  ResponseType extends {
-    code: number
-    data: unknown
+  ResponseInput extends {
+    code: number;
+    data: unknown;
+  },
+  ResponseOutput extends {
+    code: number;
+    data: unknown;
   },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 >(
-  route: Route<ResponseType, Param, Query, Data, Headers>,
-  pureHandler: PureHandler<
-    ResponseType,
-    Param,
-    Query,
-    Data,
-    Headers
-  >
+  route: Route<ResponseInput, ResponseOutput, Param, Query, Data, Headers>,
+  pureHandler: PureHandler<ResponseInput, Param, Query, Data, Headers>,
 ): RouteWithHandler<
-  ResponseType,
+  ResponseInput,
+  ResponseOutput,
   Param,
   Query,
   Data,
@@ -251,39 +241,45 @@ export const routeWithPureHandler = <
   type: 'RouteWithHandler',
   route,
   handler: flow(pureHandler, T.of),
-})
+});
 
 export const routeWithEitherHandler = <
-  SuccessResponseType extends {
-    code: number
-    data: unknown
+  SuccessResponseInput extends {
+    code: number;
+    data: unknown;
   },
-  FailureResponseType extends {
-    code: number
-    data: unknown
+  FailureResponseInput extends {
+    code: number;
+    data: unknown;
+  },
+  ResponseOutput extends {
+    code: number;
+    data: unknown;
   },
   Param,
   Query,
   Data,
-  Headers
+  Headers,
 >(
   route: Route<
-    SuccessResponseType | FailureResponseType,
+    SuccessResponseInput | FailureResponseInput,
+    ResponseOutput,
     Param,
     Query,
     Data,
     Headers
   >,
   eitherHandler: EitherHandler<
-    SuccessResponseType,
-    FailureResponseType,
+    SuccessResponseInput,
+    FailureResponseInput,
     Param,
     Query,
     Data,
     Headers
-  >
+  >,
 ): RouteWithHandler<
-  SuccessResponseType | FailureResponseType,
+  SuccessResponseInput | FailureResponseInput,
+  ResponseOutput,
   Param,
   Query,
   Data,
@@ -294,14 +290,8 @@ export const routeWithEitherHandler = <
   handler: flow(
     eitherHandler,
     E.fold(
-      (e) =>
-        T.of(e) as T.Task<
-          FailureResponseType | SuccessResponseType
-        >,
-      (a) =>
-        T.of(a) as T.Task<
-          FailureResponseType | SuccessResponseType
-        >
-    )
+      (e) => T.of(e) as T.Task<FailureResponseInput | SuccessResponseInput>,
+      (a) => T.of(a) as T.Task<FailureResponseInput | SuccessResponseInput>,
+    ),
   ),
-})
+});
