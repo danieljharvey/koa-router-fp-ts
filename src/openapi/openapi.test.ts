@@ -191,7 +191,7 @@ describe('createOpenAPISpec', () => {
     const result = evaluate(
       pathItemForRoute(
         healthz.route,
-        healthz.route.responseDecoder
+        healthz.route.responseEncoder
       )
     )
     expect((result as any).right.url).toEqual('/healthz')
