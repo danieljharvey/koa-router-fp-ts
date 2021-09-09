@@ -3,6 +3,7 @@ import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
 import { pipe, identity } from 'fp-ts/function'
 import * as Ap from 'fp-ts/Apply'
+
 import {
   MatchError,
   validationError,
@@ -47,19 +48,17 @@ const matchRouteItem = (
   routeItem: RouteItem,
   urlPart: string
 ): E.Either<MatchError, Record<string, string>> => {
-  switch (routeItem.type) {
-    case 'Literal':
-      return routeItem.literal.toLowerCase() ===
-        urlPart.toLowerCase()
-        ? E.right({})
-        : E.left(
-            noMatch(
-              `${urlPart} did not match ${routeItem.literal}`
-            )
+  if (routeItem.type === 'Literal') {
+    return routeItem.literal.toLowerCase() ===
+      urlPart.toLowerCase()
+      ? E.right({})
+      : E.left(
+          noMatch(
+            `${urlPart} did not match ${routeItem.literal}`
           )
-    case 'Param':
-      return E.right({ [routeItem.name]: urlPart })
+        )
   }
+  return E.right({ [routeItem.name]: urlPart })
 }
 
 const flattenParams = (
@@ -82,13 +81,21 @@ export type MatchInputs = {
 }
 
 export const matchRoute = <
-  ResponseType,
+  ResponseInput,
+  ResponseOutput,
   Param,
   Query,
   Data,
   Headers
 >(
-  route: Route<ResponseType, Param, Query, Data, Headers>
+  route: Route<
+    ResponseInput,
+    ResponseOutput,
+    Param,
+    Query,
+    Data,
+    Headers
+  >
 ) => ({
   url,
   method,

@@ -1,6 +1,10 @@
+import { flow } from 'fp-ts/function'
+import * as t from 'io-ts'
+import * as T from 'fp-ts/Task'
+import * as TE from 'fp-ts/TaskEither'
+
 import {
   HandlerInput,
-  routeWithTaskHandler,
   routeWithTaskEitherHandler,
   makeRoute,
   get,
@@ -10,11 +14,6 @@ import {
   response,
   numberDecoder,
 } from '../../index'
-import { flow } from 'fp-ts/function'
-import * as t from 'io-ts'
-import * as T from 'fp-ts/Task'
-
-import * as TE from 'fp-ts/TaskEither'
 
 // auth shared between endpoints
 

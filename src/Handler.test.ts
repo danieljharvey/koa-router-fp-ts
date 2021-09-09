@@ -1,8 +1,9 @@
-import { routeWithTaskHandler } from './Handler'
-import { runRouteWithHandler, respond } from './runRoute'
 import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
+
+import { runRouteWithHandler, respond } from './runRoute'
+import { routeWithTaskHandler } from './Handler'
 import {
   response,
   get,
@@ -12,8 +13,8 @@ import {
 import { numberDecoder } from './decoders'
 import { makeRoute } from './makeRoute'
 
-describe('Test the goddamn handlers', () => {
-  it('Uses the healthz handler successfully', async () => {
+describe('test the handlers', () => {
+  it('uses the healthz handler successfully', async () => {
     const responseD = t.type({
       code: t.literal(200),
       data: t.literal('OK'),
@@ -39,36 +40,7 @@ describe('Test the goddamn handlers', () => {
     )
   })
 
-  it('Uses the healthz handler with wrong return values', async () => {
-    const responseD = t.type({
-      code: t.literal(200),
-      data: t.literal('OK'),
-    })
-
-    const healthz = routeWithTaskHandler(
-      makeRoute(get, lit('healthz'), response(responseD)),
-
-      () => {
-        return T.of(respond(500 as any, 'OK' as const))
-      }
-    )
-
-    const result = await runRouteWithHandler(healthz)({
-      url: '/healthz',
-      method: 'get',
-      rawData: {},
-      rawHeaders: {},
-    })()
-
-    expect(E.isRight(result)).toBeTruthy()
-    expect(
-      E.isRight(result) &&
-        E.isLeft(result.right) &&
-        result.right.left.type
-    ).toEqual('ValidationError')
-  })
-
-  it('Uses a doggy handler', async () => {
+  it('uses a doggy handler', async () => {
     const dogAges = {
       frank: 100,
       stuart: 10,

@@ -1,11 +1,12 @@
 import * as Koa from 'koa'
-import { RouteWithHandler } from './Handler'
-import { runRouteWithHandler } from './runRoute'
 import * as E from 'fp-ts/Either'
 import { pipe } from 'fp-ts/lib/function'
 import * as NE from 'fp-ts/NonEmptyArray'
 import * as A from 'fp-ts/Array'
 import * as TE from 'fp-ts/TaskEither'
+
+import { runRouteWithHandler } from './runRoute'
+import { RouteWithHandler } from './Handler'
 
 // we can accept a NonEmptyArray instead
 const neAltMany = <E, A>(
@@ -33,6 +34,7 @@ type AnyRouteWithHandler = RouteWithHandler<
   any,
   any,
   any,
+  any,
   any
 >
 
@@ -43,8 +45,8 @@ export const serveRoutes = (
   ctx: Koa.Context,
   _next: () => Promise<unknown>
 ) => {
-  const url = ctx.request.url
-  const method = ctx.request.method
+  const { url } = ctx.request
+  const { method } = ctx.request
   const rawHeaders = ctx.request.headers
   const rawData = (ctx.request as any).body
 
@@ -93,5 +95,4 @@ export const serveRoutes = (
 
   ctx.response.status = 404
   ctx.response.body = 'Not Found'
-  return
 }

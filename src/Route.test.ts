@@ -1,3 +1,6 @@
+import * as E from 'fp-ts/Either'
+import * as t from 'io-ts'
+
 import {
   get,
   post,
@@ -6,8 +9,6 @@ import {
   data,
   headers,
 } from './routeCombinators'
-import * as E from 'fp-ts/Either'
-import * as t from 'io-ts'
 import { numberDecoder, booleanDecoder } from './decoders'
 import { matchRoute } from './matchRoute'
 import { makeRoute } from './makeRoute'
@@ -34,8 +35,8 @@ const userWithData = makeRoute(
   data(t.type({ dog: booleanDecoder }))
 )
 
-describe('Route matching', () => {
-  it('Get after Post works is Get', () => {
+describe('route matching', () => {
+  it('get after Post works is Get', () => {
     const healthzGet = makeRoute(post, get, lit('healthz'))
     expect(
       E.isRight(
@@ -49,7 +50,7 @@ describe('Route matching', () => {
     ).toBeTruthy()
   })
 
-  it('Healthz endpoint', () => {
+  it('healthz endpoint', () => {
     expect(
       matchRoute(healthz)({
         url: '/healthz',
@@ -86,7 +87,7 @@ describe('Route matching', () => {
       )
     ).toBeFalsy()
   })
-  it('Username endpoint', () => {
+  it('username endpoint', () => {
     expect(
       matchRoute(userName)({
         url: '/user/name',

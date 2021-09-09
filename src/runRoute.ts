@@ -1,26 +1,27 @@
-import { MatchInputs, matchRoute } from './matchRoute'
-import {
-  MatchError,
-  NoMatchError,
-  MatchValidationError,
-  noResponseValidator,
-  validationError,
-} from './MatchError'
-import { RouteWithHandler } from './Handler'
-import * as D from './Decoder'
 import * as TE from 'fp-ts/TaskEither'
 import * as E from 'fp-ts/Either'
 import { flow, pipe } from 'fp-ts/lib/function'
 
+import { MatchInputs, matchRoute } from './matchRoute'
+import {
+  MatchError,
+  MatchValidationError,
+  noResponseValidator,
+} from './MatchError'
+import { RouteWithHandler } from './Handler'
+import * as Enc from './Encoder'
+
 export const runRouteWithHandler = <
-  ResponseType extends { code: number; data: unknown },
+  ResponseInput extends { code: number; data: unknown },
+  ResponseOutput extends { code: number; data: unknown },
   Param,
   Query,
   Data,
   Headers
 >(
   routeWithHandler: RouteWithHandler<
-    ResponseType,
+    ResponseInput,
+    ResponseOutput,
     Param,
     Query,
     Data,
@@ -29,18 +30,18 @@ export const runRouteWithHandler = <
 ): ((
   inputs: MatchInputs
 ) => TE.TaskEither<
-  NoMatchError,
-  E.Either<MatchValidationError, ResponseType>
->) => {
-  return flow(
+  MatchError,
+  E.Either<MatchValidationError, ResponseOutput>
+>) =>
+  flow(
     matchRoute(routeWithHandler.route),
     TE.fromEither,
     TE.chain((matchedRoute) =>
       TE.fromTask(routeWithHandler.handler(matchedRoute))
     ),
     TE.chainEitherKW(
-      validateResponse(
-        routeWithHandler.route.responseDecoder
+      serialiseResponse(
+        routeWithHandler.route.responseEncoder
       )
     ),
     TE.map(E.right),
@@ -50,17 +51,18 @@ export const runRouteWithHandler = <
         : TE.right(E.left(e))
     )
   )
-}
 
-const validateResponse = <ResponseType>(
-  responseDecoder: D.Decoder<ResponseType>
-) => (resp: unknown) =>
-  responseDecoder.type === 'Decoder'
-    ? pipe(
-        resp,
-        responseDecoder.decoder.decode,
-        E.mapLeft(validationError('response'))
-      )
+// serialise response
+const serialiseResponse = <ResponseInput, ResponseOutput>(
+  responseEncoder: Enc.Encoder<
+    ResponseInput,
+    ResponseOutput
+  >
+) => (
+  resp: ResponseInput
+): E.Either<MatchError, ResponseOutput> =>
+  responseEncoder.type === 'Encoder'
+    ? pipe(resp, responseEncoder.encoder.encode, E.right)
     : E.left(noResponseValidator() as MatchError)
 
 export const respond = <Code extends number, Data>(

@@ -1,26 +1,26 @@
 import * as t from 'io-ts'
 
-export type Decoder<A> =
+export type Decoder<Input> =
   | {
       type: 'Decoder'
-      decoder: t.Type<A, unknown, unknown>
+      decoder: t.Type<Input, unknown, unknown> // replace any with correct return type
     }
   | { type: 'NoDecoder' }
 
 type GenericRec = Record<string, unknown>
 
 export const and = <
-  ParamA extends GenericRec,
-  ParamB extends GenericRec
+  InputA extends GenericRec,
+  InputB extends GenericRec
 >(
-  a: Decoder<ParamA>,
-  b: Decoder<ParamB>
-): Decoder<ParamA & ParamB> => {
+  a: Decoder<InputA>,
+  b: Decoder<InputB>
+): Decoder<InputA & InputB> => {
   if (a.type !== 'Decoder' && b.type === 'Decoder') {
-    return b as Decoder<ParamA & ParamB>
+    return b as Decoder<InputA & InputB>
   }
   if (a.type === 'Decoder' && b.type !== 'Decoder') {
-    return a as Decoder<ParamA & ParamB>
+    return a as Decoder<InputA & InputB>
   }
   if (a.type === 'Decoder' && b.type === 'Decoder') {
     return {
@@ -31,15 +31,15 @@ export const and = <
   return { type: 'NoDecoder' }
 }
 
-export const or = <ParamA, ParamB>(
-  a: Decoder<ParamA>,
-  b: Decoder<ParamB>
-): Decoder<ParamA | ParamB> => {
+export const or = <InputA, InputB>(
+  a: Decoder<InputA>,
+  b: Decoder<InputB>
+): Decoder<InputA | InputB> => {
   if (a.type !== 'Decoder' && b.type === 'Decoder') {
-    return b as Decoder<ParamA | ParamB>
+    return b as Decoder<InputA | InputB>
   }
   if (a.type === 'Decoder' && b.type !== 'Decoder') {
-    return a as Decoder<ParamA | ParamB>
+    return a as Decoder<InputA | InputB>
   }
   if (a.type === 'Decoder' && b.type === 'Decoder') {
     return {

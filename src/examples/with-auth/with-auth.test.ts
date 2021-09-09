@@ -1,12 +1,14 @@
-import { getUser, getUsers } from './with-auth'
-import { withServer } from '../../index.test'
-import { serveRoutes } from '../../index'
 import request from 'supertest'
+
+import { withServer } from '../../helpers/withServer'
+import { serveRoutes } from '../../index'
+
+import { getUser, getUsers } from './with-auth'
 
 const app = serveRoutes(getUser, getUsers)
 
 describe('getUser', () => {
-  it('Fails when no auth headers sent', async () => {
+  it('fails when no auth headers sent', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server).get('/user/123/')
 
@@ -16,7 +18,7 @@ describe('getUser', () => {
       )
     })
   })
-  it('Fails when wrong format of auth headers sent', async () => {
+  it('fails when wrong format of auth headers sent', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/user/123/')
@@ -29,7 +31,7 @@ describe('getUser', () => {
     })
   })
 
-  it('Fails when wrong auth headers sent', async () => {
+  it('fails when wrong auth headers sent', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/user/123/')
@@ -40,7 +42,7 @@ describe('getUser', () => {
     })
   })
 
-  it('Correct auth but cannot find user', async () => {
+  it('correct auth but cannot find user', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/user/123/')
@@ -51,7 +53,7 @@ describe('getUser', () => {
     })
   })
 
-  it('Found user', async () => {
+  it('found user', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/user/100/')
@@ -68,7 +70,7 @@ describe('getUser', () => {
 })
 
 describe('getUsers', () => {
-  it('Fails when no auth headers sent', async () => {
+  it('fails when no auth headers sent', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server).get('/users/')
 
@@ -78,7 +80,7 @@ describe('getUsers', () => {
       )
     })
   })
-  it('Fails when wrong format of auth headers sent', async () => {
+  it('fails when wrong format of auth headers sent', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/users/')
@@ -91,7 +93,7 @@ describe('getUsers', () => {
     })
   })
 
-  it('Fails when wrong auth headers sent', async () => {
+  it('fails when wrong auth headers sent', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/users/')
@@ -102,7 +104,7 @@ describe('getUsers', () => {
     })
   })
 
-  it('Found users', async () => {
+  it('found users', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server)
         .get('/users/')

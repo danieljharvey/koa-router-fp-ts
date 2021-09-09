@@ -1,7 +1,8 @@
 import * as t from 'io-ts'
-import { routeLiteral, routeParam } from './RouteItem'
-import { Route, emptyRoute } from './Route'
 import * as O from 'fp-ts/Option'
+
+import { routeLiteral, routeParam } from './RouteItem'
+import { EmptyRec, Route, emptyRoute } from './Route'
 
 export const get: Route = {
   ...emptyRoute,
@@ -18,17 +19,17 @@ export const lit = (literal: string): Route => ({
   parts: [routeLiteral(literal)],
 })
 
-export const response = <ResponseType>(
-  decoder: t.Type<ResponseType>
-): Route<ResponseType> => ({
+export const response = <ResponseInput, ResponseOutput>(
+  encoder: t.Type<ResponseInput, ResponseOutput, unknown>
+): Route<ResponseInput, ResponseOutput> => ({
   ...emptyRoute,
-  responseDecoder: { type: 'Decoder', decoder },
+  responseEncoder: { type: 'Encoder', encoder },
 })
 
 export const param = <ParamName extends string, Param>(
   param: ParamName,
   decoder: t.Type<Param, unknown, unknown>
-): Route<never, Record<ParamName, Param>> => ({
+): Route<never, never, Record<ParamName, Param>> => ({
   ...emptyRoute,
   parts: [routeParam(param)],
   paramDecoder: {
@@ -41,28 +42,35 @@ export const param = <ParamName extends string, Param>(
 
 export const params = <Param>(
   paramDecoder: t.Type<Param, unknown, unknown>
-): Route<never, Param> => ({
+): Route<never, never, Param> => ({
   ...emptyRoute,
   paramDecoder: { type: 'Decoder', decoder: paramDecoder },
 })
 
 export const query = <Query>(
   queryDecoder: t.Type<Query, unknown, unknown>
-): Route<never, {}, Query> => ({
+): Route<never, never, EmptyRec, Query> => ({
   ...emptyRoute,
   queryDecoder: { type: 'Decoder', decoder: queryDecoder },
 })
 
 export const data = <Data>(
   dataDecoder: t.Type<Data, unknown, unknown>
-): Route<never, {}, {}, Data> => ({
+): Route<never, never, EmptyRec, EmptyRec, Data> => ({
   ...emptyRoute,
   dataDecoder: { type: 'Decoder', decoder: dataDecoder },
 })
 
 export const headers = <Headers>(
   headersDecoder: t.Type<Headers, unknown, unknown>
-): Route<never, {}, {}, {}, Headers> => ({
+): Route<
+  never,
+  never,
+  EmptyRec,
+  EmptyRec,
+  EmptyRec,
+  Headers
+> => ({
   ...emptyRoute,
   headersDecoder: {
     type: 'Decoder',

@@ -14,12 +14,7 @@ export const noMatch = (message: string) => ({
 })
 
 export const validationError = (
-  which:
-    | 'headers'
-    | 'body'
-    | 'query'
-    | 'params'
-    | 'response'
+  which: 'headers' | 'body' | 'query' | 'params'
 ) => (errors: t.Errors) => ({
   type: 'ValidationError' as const,
   which,

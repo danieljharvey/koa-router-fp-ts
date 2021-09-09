@@ -1,3 +1,7 @@
+import * as t from 'io-ts'
+import * as E from 'fp-ts/Either'
+import { DateFromISOString } from 'io-ts-types'
+
 import {
   HandlerInput,
   makeRoute,
@@ -9,15 +13,14 @@ import {
   routeWithEitherHandler,
   routeWithPureHandler,
 } from '../../index'
-import * as t from 'io-ts'
 
-import * as E from 'fp-ts/Either'
+type User = { name: string; age: number; birthday: Date }
 
-type User = { name: string; age: number }
+const sampleDate = new Date(2020, 1, 1, 1, 1, 1)
 
 const userData: Record<number, User> = {
-  100: { name: 'dog', age: 100 },
-  200: { name: 'cat', age: 3 },
+  100: { name: 'dog', age: 100, birthday: sampleDate },
+  200: { name: 'cat', age: 3, birthday: sampleDate },
 }
 
 // /user/:id
@@ -36,6 +39,7 @@ const userResponse = t.type({
   data: t.type({
     name: t.string,
     age: t.number,
+    birthday: DateFromISOString,
   }),
 })
 
@@ -106,3 +110,5 @@ export const getUsers = routeWithPureHandler(
   getUsersRoute,
   getUsersHandler
 )
+
+// post user
