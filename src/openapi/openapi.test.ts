@@ -110,7 +110,7 @@ describe('createOpenAPISpec', () => {
   })
 
   it('Kinda works', () => {
-    const json = createOpenAPISpec(healthz)
+    const json = createOpenAPISpec([healthz])
 
     console.log(JSON.stringify(json))
     expect(json).not.toBeNull()
@@ -142,7 +142,7 @@ describe('createOpenAPISpec', () => {
       initialState
     )
 
-    const json = createOpenAPISpec(userHandler)
+    const json = createOpenAPISpec([userHandler])
 
     console.log(JSON.stringify(json))
 
@@ -185,6 +185,67 @@ describe('createOpenAPISpec', () => {
     ]
 
     expect(resp).toEqual(E.right(expected))
+  })
+
+  it('Multiple routes', () => {
+    const json = createOpenAPISpec([userHandler, healthz])
+
+    const expected: OpenAPIV3.Document = {
+      openapi: '3.0.0',
+      info: { title: 'My API', version: '1.0.0' },
+      paths: {
+        '/healthz': {
+          get: {
+            description: 'Generic route info',
+            responses: {
+              '200': {
+                description: 'Healthz',
+              },
+            },
+          },
+        },
+        '/user': {
+          get: {
+            description: 'Generic route info',
+            responses: {
+              '200': {
+                description: 'UserSuccess',
+              },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          Healthz: {
+            type: 'string',
+          },
+          User: {
+            type: 'object',
+            properties: {
+              firstName: { type: 'string' },
+              surname: { type: 'string' },
+              userId: { type: 'number' },
+            },
+          },
+
+          UserSuccess: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' },
+              users: {
+                type: 'array',
+                items: {
+                  $ref: '#/components/schemas/User',
+                },
+              },
+            },
+          },
+        },
+      },
+    }
+
+    expect(json).toEqual(E.right(expected))
   })
 
   it('pathItemForRoute', () => {

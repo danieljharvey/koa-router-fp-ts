@@ -3,6 +3,7 @@ import { RouteWithHandler } from '../Handler'
 import { Encoder } from '../Encoder'
 import { showRouteItems } from '../RouteItem'
 import { pipe } from 'fp-ts/function'
+import * as Arr from 'fp-ts/Array'
 import {
   OpenAPIM,
   PathItem,
@@ -23,25 +24,29 @@ type AnyHandler = RouteWithHandler<
   any
 >
 
+const sequenceStateEitherArray = Arr.sequence(
+  SE.Applicative
+)
+
 export const createOpenAPISpec = (
-  rwh: AnyHandler
+  handlers: AnyHandler[]
 ): E.Either<string, OpenAPIV3.Document> => {
   const x = pipe(
-    toEither(
-      pathItemForRoute(
-        rwh.route,
-        rwh.route.responseEncoder
-      ),
-      initialState
+    sequenceStateEitherArray(
+      handlers.map((rwh) =>
+        pathItemForRoute(
+          rwh.route,
+          rwh.route.responseEncoder
+        )
+      )
     ),
+    (se) => toEither(se, initialState),
     E.map(
-      ([{ url, pathItem }, { schemas }]) =>
+      ([pathItems, { schemas }]) =>
         ({
           openapi: '3.0.0',
           info: { title: 'My API', version: '1.0.0' },
-          paths: {
-            [url]: pathItem,
-          },
+          paths: resultsToPaths(pathItems),
           components: {
             schemas: schemas.reduce(
               (as, a) => ({ ...as, [a.name]: a.schema }),
@@ -54,6 +59,17 @@ export const createOpenAPISpec = (
 
   return x
 }
+
+const resultsToPaths = (
+  pathItems: PathItem[]
+): OpenAPIV3.Document['paths'] =>
+  pathItems.reduce(
+    (obj, { url, pathItem }) => ({
+      ...obj,
+      [url]: pathItem,
+    }),
+    {} as OpenAPIV3.Document['paths']
+  )
 
 export const pathItemForRoute = (
   route: AnyHandler['route'],
