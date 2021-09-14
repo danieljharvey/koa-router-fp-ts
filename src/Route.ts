@@ -27,6 +27,7 @@ export type Route<
   queryDecoder: D.Decoder<Query>
   dataDecoder: D.Decoder<Data>
   headersDecoder: D.Decoder<Headers>
+  description: string[]
 }
 
 // useful for `A extends AnyRoute`
@@ -121,6 +122,7 @@ export const combine = <
     a.responseEncoder,
     b.responseEncoder
   ),
+  description: a.description.concat(...b.description),
 })
 
 export const emptyRoute: Route = {
@@ -131,4 +133,5 @@ export const emptyRoute: Route = {
   queryDecoder: { type: 'NoDecoder' },
   dataDecoder: { type: 'NoDecoder' },
   headersDecoder: { type: 'NoDecoder' },
+  description: [],
 }

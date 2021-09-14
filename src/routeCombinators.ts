@@ -99,3 +99,7 @@ export const headers = <Headers>(
     decoder: headersDecoder,
   },
 })
+
+export const description = (
+  description: string
+): Route => ({ ...emptyRoute, description: [description] })

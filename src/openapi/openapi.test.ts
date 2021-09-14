@@ -14,6 +14,7 @@ import {
   response,
   routeWithTaskHandler,
   respond,
+  description,
 } from '../index'
 import * as E from 'fp-ts/Either'
 
@@ -34,7 +35,14 @@ const healthzDecoder = t.type(
 )
 
 const healthz = routeWithTaskHandler(
-  makeRoute(get, lit('healthz'), response(healthzDecoder)),
+  makeRoute(
+    get,
+    lit('healthz'),
+    response(healthzDecoder),
+    description(
+      'Returns a 200 to indicate the service is running'
+    )
+  ),
   () => T.of(respond(200, 'OK' as const))
 )
 
@@ -59,7 +67,12 @@ const userSuccessDecoder = t.type(
 )
 
 const userHandler = routeWithTaskHandler(
-  makeRoute(get, lit('user'), response(userSuccessDecoder)),
+  makeRoute(
+    get,
+    lit('user'),
+    response(userSuccessDecoder),
+    description('Returns a single user from the database')
+  ),
   () =>
     T.of(
       respond(200, {
@@ -196,7 +209,8 @@ describe('createOpenAPISpec', () => {
       paths: {
         '/healthz': {
           get: {
-            description: 'Generic route info',
+            description:
+              'Returns a 200 to indicate the service is running',
             responses: {
               '200': {
                 description: 'Healthz',
@@ -206,7 +220,8 @@ describe('createOpenAPISpec', () => {
         },
         '/user': {
           get: {
-            description: 'Generic route info',
+            description:
+              'Returns a single user from the database',
             responses: {
               '200': {
                 description: 'UserSuccess',

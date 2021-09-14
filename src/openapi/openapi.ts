@@ -71,6 +71,10 @@ const resultsToPaths = (
     {} as OpenAPIV3.Document['paths']
   )
 
+const getPathDescription = (
+  route: AnyHandler['route']
+): string => route.description.join('\n')
+
 export const pathItemForRoute = (
   route: AnyHandler['route'],
   responseEncoder: Encoder<any, any>
@@ -83,7 +87,7 @@ export const pathItemForRoute = (
       url: showRouteItems(route.parts),
       pathItem: {
         get: {
-          description: 'Generic route info',
+          description: getPathDescription(route),
           responses,
         },
       },
