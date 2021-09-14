@@ -1,8 +1,12 @@
 import { OpenAPIV3 } from 'openapi-types'
 import * as t from 'io-ts'
-import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/function'
-import { addSchema, OpenAPIM, pure } from './types'
+import {
+  addSchema,
+  OpenAPIM,
+  pure,
+  sequenceStateEitherArray,
+} from './types'
 import * as SE from 'fp-ts-contrib/StateEither'
 import {
   nameIsDeliberate,
@@ -36,9 +40,8 @@ const withInterfaceType = (
         )
     ),
     SE.map(createObjectSchema),
-    SE.chain((schema) => {
-      console.log('withInterfaceType', { decoder, schema })
-      return nameIsDeliberate(decoder.name)
+    SE.chain((schema) =>
+      nameIsDeliberate(decoder.name)
         ? pipe(
             addSchema({
               name: decoder.name,
@@ -52,7 +55,7 @@ const withInterfaceType = (
             | OpenAPIV3.SchemaObject
             | OpenAPIV3.ReferenceObject
           >(schema)
-    })
+    )
   )
 
 const withRefinementType = (
@@ -97,40 +100,54 @@ export const withDecoder = (
   return SE.left('No decoder found')
 }
 
+const interfaceObject = (
+  decoder: t.InterfaceType<any>
+): OpenAPIM<OpenAPIV3.ResponsesObject> => {
+  const code =
+    decoder?._tag === 'InterfaceType'
+      ? decoder.props?.code?.value
+      : 0
+  const data = {
+    description:
+      decoder.name || statusCodeDescription(code),
+  }
+
+  const responses: OpenAPIV3.ResponsesObject = {
+    [code]: data,
+  }
+
+  return pipe(
+    decoder.props?.data
+      ? withDecoder(decoder.props.data)
+      : SE.left('No decoder props'),
+
+    SE.chain((dataType) =>
+      addSchema({
+        name: decoder.name || statusCodeDescription(code),
+        schema: dataType,
+      })
+    ),
+
+    SE.map(() => responses)
+  )
+}
+
 export const responsesObject = (
   decoder: any // t.Type<any>
 ): OpenAPIM<OpenAPIV3.ResponsesObject> => {
-  if (decoder?._tag === 'InterfaceType') {
-    const code =
-      decoder?._tag === 'InterfaceType'
-        ? decoder.props?.code?.value
-        : 0
-    const dataType = decoder.props?.data
-      ? withDecoder(decoder.props.data)
-      : O.none
-    const data = {
-      description:
-        decoder.name || statusCodeDescription(code),
-    }
-
-    const responses: OpenAPIV3.ResponsesObject = {
-      [code]: data,
-    }
-
+  if (decoder instanceof t.InterfaceType) {
+    return interfaceObject(decoder)
+  } else if (decoder instanceof t.UnionType) {
     return pipe(
-      decoder.props?.data
-        ? withDecoder(decoder.props.data)
-        : SE.left('No decoder props'),
-
-      SE.chain((dataType) =>
-        addSchema({
-          name: decoder.name || statusCodeDescription(code),
-          schema: dataType,
-        })
+      sequenceStateEitherArray<OpenAPIV3.ResponsesObject>(
+        decoder.types.map(responsesObject)
       ),
-
-      SE.map(() => responses)
+      SE.map((responses) =>
+        responses.reduce((as, a) => ({ ...as, ...a }), {})
+      )
     )
   }
-  return SE.left('Not an interface')
+  return SE.left(
+    `Response type expected to be interface or union type but instead got ${decoder._tag}`
+  )
 }

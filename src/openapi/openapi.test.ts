@@ -11,13 +11,16 @@ import {
   makeRoute,
   lit,
   get,
+  data,
+  post,
   response,
   routeWithTaskHandler,
+  routeWithTaskEitherHandler,
   respond,
   description,
 } from '../index'
 import * as E from 'fp-ts/Either'
-
+import * as TE from 'fp-ts/TaskEither'
 import * as T from 'fp-ts/Task'
 import {
   OpenAPIState,
@@ -84,6 +87,53 @@ const userHandler = routeWithTaskHandler(
     )
 )
 
+const infoPostData = t.type(
+  {
+    name: t.string,
+    age: t.number,
+  },
+  'InfoPostData'
+)
+
+const infoSuccessDecoder = t.type(
+  {
+    code: t.literal(200),
+    data: t.string,
+  },
+  'InfoSuccess'
+)
+
+const infoFailureDecoder = t.type(
+  {
+    code: t.literal(500),
+    data: t.type({
+      errorMsg: t.string,
+    }),
+  },
+  'InfoFailure'
+)
+
+const infoHandler = routeWithTaskEitherHandler(
+  makeRoute(
+    post,
+    data(infoPostData),
+    lit('info'),
+    response(infoFailureDecoder),
+    response(infoSuccessDecoder),
+    description('Posted information')
+  ),
+  ({ data: { name, age } }) =>
+    age > 18
+      ? TE.right({
+          code: 200 as const,
+          data: `Great job, ${name}`,
+        })
+      : TE.left({
+          code: 500 as const,
+          data: { errorMsg: 'Oh no' },
+        })
+)
+
 describe('createOpenAPISpec', () => {
   it('withDecoder primitives', () => {
     expect(evaluate(withDecoder(t.string))).toEqual(
@@ -125,7 +175,6 @@ describe('createOpenAPISpec', () => {
   it('Kinda works', () => {
     const json = createOpenAPISpec([healthz])
 
-    console.log(JSON.stringify(json))
     expect(json).not.toBeNull()
   })
 
@@ -156,8 +205,6 @@ describe('createOpenAPISpec', () => {
     )
 
     const json = createOpenAPISpec([userHandler])
-
-    console.log(JSON.stringify(json))
 
     const expected: [
       OpenAPIV3.ResponsesObject,
@@ -201,7 +248,11 @@ describe('createOpenAPISpec', () => {
   })
 
   it('Multiple routes', () => {
-    const json = createOpenAPISpec([userHandler, healthz])
+    const json = createOpenAPISpec([
+      userHandler,
+      healthz,
+      infoHandler,
+    ])
 
     const expected: OpenAPIV3.Document = {
       openapi: '3.0.0',
@@ -229,10 +280,34 @@ describe('createOpenAPISpec', () => {
             },
           },
         },
+        '/info': {
+          post: {
+            description: 'Posted information',
+            responses: {
+              '200': {
+                description: 'InfoSuccess',
+              },
+              '500': {
+                description: 'InfoFailure',
+              },
+            },
+          },
+        },
       },
       components: {
         schemas: {
           Healthz: {
+            type: 'string',
+          },
+          InfoFailure: {
+            type: 'object',
+            properties: {
+              errorMsg: {
+                type: 'string',
+              },
+            },
+          },
+          InfoSuccess: {
             type: 'string',
           },
           User: {

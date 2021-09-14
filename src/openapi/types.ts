@@ -1,7 +1,9 @@
 import { OpenAPIV3 } from 'openapi-types'
 
+import * as Arr from 'fp-ts/Array'
 import * as SE from 'fp-ts-contrib/StateEither'
 import * as E from 'fp-ts/Either'
+import * as Ap from 'fp-ts/Apply'
 
 export type PathItem = {
   url: string
@@ -28,6 +30,15 @@ export const initialState: OpenAPIState = {
 }
 
 export const pure = <A>(a: A): OpenAPIM<A> => SE.right(a)
+
+export const throwError = (err: string): OpenAPIM<never> =>
+  SE.left(err)
+
+export const sequenceStateEitherArray: <A>(
+  as: OpenAPIM<A>[]
+) => OpenAPIM<A[]> = Arr.sequence(SE.Applicative)
+
+export const sequenceT = Ap.sequenceT(SE.Apply)
 
 // add a schema to the state
 export const addSchema = (

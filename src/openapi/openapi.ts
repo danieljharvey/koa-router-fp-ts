@@ -3,12 +3,15 @@ import { RouteWithHandler } from '../Handler'
 import { Encoder } from '../Encoder'
 import { showRouteItems } from '../RouteItem'
 import { pipe } from 'fp-ts/function'
-import * as Arr from 'fp-ts/Array'
 import {
   OpenAPIM,
   PathItem,
   toEither,
   initialState,
+  pure,
+  throwError,
+  sequenceStateEitherArray,
+  sequenceT,
 } from './types'
 import * as SE from 'fp-ts-contrib/StateEither'
 import * as E from 'fp-ts/Either'
@@ -23,10 +26,6 @@ type AnyHandler = RouteWithHandler<
   any,
   any
 >
-
-const sequenceStateEitherArray = Arr.sequence(
-  SE.Applicative
-)
 
 export const createOpenAPISpec = (
   handlers: AnyHandler[]
@@ -75,18 +74,28 @@ const getPathDescription = (
   route: AnyHandler['route']
 ): string => route.description.join('\n')
 
+const getHttpMethod = (
+  route: AnyHandler['route']
+): OpenAPIM<string> =>
+  route.method._tag === 'Some'
+    ? pure(route.method.value.toLowerCase())
+    : throwError('Route has no HTTP method')
+
 export const pathItemForRoute = (
   route: AnyHandler['route'],
   responseEncoder: Encoder<any, any>
 ): OpenAPIM<PathItem> =>
   pipe(
-    responseEncoder.type === 'Encoder'
-      ? responsesObject(responseEncoder.encoder)
-      : SE.left('No response decoder'),
-    SE.map((responses) => ({
+    sequenceT(
+      responseEncoder.type === 'Encoder'
+        ? responsesObject(responseEncoder.encoder)
+        : throwError('No response decoder'),
+      getHttpMethod(route)
+    ),
+    SE.map(([responses, method]) => ({
       url: showRouteItems(route.parts),
       pathItem: {
-        get: {
+        [method]: {
           description: getPathDescription(route),
           responses,
         },
