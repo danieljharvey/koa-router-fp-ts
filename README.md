@@ -5,6 +5,8 @@ running to ensure validation is pushed to the very border of your application.
 
 Somewhat inspired by `Servant`.
 
+Documentation on it's way, in the meantime, check out the [examples](https://github.com/danieljharvey/koa-router-fp-ts/tree/trunk/src/examples) folder.
+
 ## Development install
 
 ```
