@@ -30,22 +30,3 @@ export const and = <
   }
   return { type: 'NoDecoder' }
 }
-
-export const or = <InputA, InputB>(
-  a: Decoder<InputA>,
-  b: Decoder<InputB>
-): Decoder<InputA | InputB> => {
-  if (a.type !== 'Decoder' && b.type === 'Decoder') {
-    return b as Decoder<InputA | InputB>
-  }
-  if (a.type === 'Decoder' && b.type !== 'Decoder') {
-    return a as Decoder<InputA | InputB>
-  }
-  if (a.type === 'Decoder' && b.type === 'Decoder') {
-    return {
-      type: 'Decoder',
-      decoder: t.union([a.decoder, b.decoder]),
-    }
-  }
-  return { type: 'NoDecoder' }
-}

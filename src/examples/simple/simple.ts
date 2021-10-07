@@ -12,6 +12,7 @@ import {
   numberDecoder,
   routeWithEitherHandler,
   routeWithPureHandler,
+  respond,
 } from '../../index'
 
 type User = { name: string; age: number; birthday: Date }
@@ -25,51 +26,40 @@ const userData: Record<number, User> = {
 
 // /user/:id
 
-const userNotFoundResponse = t.type({
-  code: t.literal(400),
-  data: t.literal('User not found'),
-})
-
-type UserNotFoundResponse = t.TypeOf<
-  typeof userNotFoundResponse
->
+const userNotFoundResponse = t.string
 
 const userResponse = t.type({
-  code: t.literal(200),
-  data: t.type({
-    name: t.string,
-    age: t.number,
-    birthday: DateFromISOString,
-  }),
+  name: t.string,
+  age: t.number,
+  birthday: DateFromISOString,
 })
-
-type UserResponse = t.TypeOf<typeof userResponse>
 
 const getUserRoute = makeRoute(
   get,
   lit('user'),
   param('id', numberDecoder),
-  response(t.union([userResponse, userNotFoundResponse]))
+  response(
+    400,
+    userNotFoundResponse,
+    'User not found',
+    'The user could not be found'
+  ),
+  response(200, userResponse, {
+    name: 'Mr Dog',
+    age: 100,
+    birthday: '1981-01-01',
+  })
 )
 
 type UserRouteInput = HandlerInput<typeof getUserRoute>
 
 const getUserHandler = ({
   params: { id },
-}: UserRouteInput): E.Either<
-  UserNotFoundResponse,
-  UserResponse
-> => {
+}: UserRouteInput) => {
   const user = userData[id]
   return user
-    ? E.right({
-        code: 200,
-        data: user,
-      })
-    : E.left({
-        code: 400,
-        data: 'User not found' as const,
-      })
+    ? E.right(respond(200, user))
+    : E.left(respond(400, 'User not found'))
 }
 
 export const getUser = routeWithEitherHandler(
@@ -79,31 +69,23 @@ export const getUser = routeWithEitherHandler(
 
 // /users/
 
-const usersResponse = t.type({
-  code: t.literal(200),
-  data: t.array(
-    t.type({
-      name: t.string,
-      age: t.number,
-    })
-  ),
-})
-
-type UsersResponse = t.TypeOf<typeof usersResponse>
+const usersResponse = t.array(
+  t.type({
+    name: t.string,
+    age: t.number,
+  })
+)
 
 const getUsersRoute = makeRoute(
   get,
   lit('users'),
-  response(usersResponse)
+  response(200, usersResponse)
 )
 
-const getUsersHandler = (): UsersResponse => {
+const getUsersHandler = () => {
   const users = Object.values(userData)
 
-  return {
-    code: 200,
-    data: users,
-  }
+  return respond(200, users)
 }
 
 export const getUsers = routeWithPureHandler(

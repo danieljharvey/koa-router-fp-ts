@@ -15,13 +15,14 @@ import { makeRoute } from './makeRoute'
 
 describe('test the handlers', () => {
   it('uses the healthz handler successfully', async () => {
-    const responseD = t.type({
-      code: t.literal(200),
-      data: t.literal('OK'),
-    })
+    const responseD = t.literal('OK')
 
     const healthz = routeWithTaskHandler(
-      makeRoute(get, lit('healthz'), response(responseD)),
+      makeRoute(
+        get,
+        lit('healthz'),
+        response(200, responseD)
+      ),
 
       () => {
         return T.of(respond(200, 'OK' as const))
@@ -47,20 +48,13 @@ describe('test the handlers', () => {
       horse: 23,
     }
 
-    const dogResponse = t.union([
-      t.type({
-        code: t.literal(200),
-        data: t.array(t.string),
-      }),
-      t.type({ code: t.literal(400), data: t.string }),
-    ])
-
     const dogAgesHandler = routeWithTaskHandler(
       makeRoute(
         get,
         lit('dogs'),
         param('age', numberDecoder),
-        response(dogResponse)
+        response(200, t.array(t.string)),
+        response(400, t.string)
       ),
       ({ params: { age } }) => {
         const matchingDogs = Object.entries(dogAges).filter(

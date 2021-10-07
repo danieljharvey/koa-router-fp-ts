@@ -19,11 +19,33 @@ export const lit = (literal: string): Route => ({
   parts: [routeLiteral(literal)],
 })
 
-export const response = <ResponseInput, ResponseOutput>(
-  encoder: t.Type<ResponseInput, ResponseOutput, unknown>
-): Route<ResponseInput, ResponseOutput> => ({
+export const response = <
+  StatusCode extends number,
+  ResponseInput,
+  ResponseOutput
+>(
+  statusCode: StatusCode,
+  encoder: t.Type<ResponseInput, ResponseOutput, unknown>,
+  example?: ResponseOutput,
+  description?: string
+): Route<
+  { code: StatusCode; data: ResponseInput },
+  { code: StatusCode; data: ResponseOutput }
+> => ({
   ...emptyRoute,
-  responseEncoder: { type: 'Encoder', encoder },
+  responseEncoder: {
+    type: 'Encoder',
+    encoder: t.type({
+      code: t.literal(statusCode),
+      data: encoder,
+    }),
+    metadata: {
+      [statusCode]: {
+        example,
+        description,
+      },
+    },
+  },
 })
 
 export const param = <ParamName extends string, Param>(
