@@ -19,13 +19,14 @@ import {
   respond,
 } from './index'
 
-const healthzDecoder = t.type({
-  code: t.literal(200),
-  data: t.literal('OK'),
-})
+const healthzDecoder = t.literal('OK')
 
 const healthz = routeWithTaskHandler(
-  makeRoute(get, lit('healthz'), response(healthzDecoder)),
+  makeRoute(
+    get,
+    lit('healthz'),
+    response(200, healthzDecoder)
+  ),
 
   () => T.of(respond(200, 'OK' as const))
 )
@@ -71,13 +72,14 @@ describe('testing with koa', () => {
     )
   })
 
-  const readyzDecoder = t.type({
-    code: t.literal(201),
-    data: t.literal('OK'),
-  })
+  const readyzDecoder = t.literal('OK')
 
   const readyz = routeWithTaskHandler(
-    makeRoute(get, lit('readyz'), response(readyzDecoder)),
+    makeRoute(
+      get,
+      lit('readyz'),
+      response(201, readyzDecoder)
+    ),
 
     () => T.of(respond(201, 'OK' as const))
   )
@@ -115,12 +117,8 @@ describe('testing with koa', () => {
       get,
       lit('user'),
       param('id', numberDecoder),
-      response(
-        t.type({ code: t.literal(200), data: t.number })
-      ),
-      response(
-        t.type({ code: t.literal(400), data: t.string })
-      )
+      response(200, t.number),
+      response(400, t.string)
     ),
 
     ({ params: { id } }) => T.of(respond(200, id))
@@ -156,9 +154,7 @@ describe('testing with koa', () => {
     makeRoute(
       get,
       lit('user'),
-      response(
-        t.type({ code: t.literal(200), data: t.number })
-      ),
+      response(200, t.number),
       query(t.type({ id: numberDecoder }))
     ),
 
@@ -181,9 +177,7 @@ describe('testing with koa', () => {
     makeRoute(
       get,
       lit('user'),
-      response(
-        t.type({ code: t.literal(200), data: t.number })
-      ),
+      response(200, t.number),
       headers(t.type({ session: numberDecoder }))
     ),
 
@@ -207,9 +201,7 @@ describe('testing with koa', () => {
     makeRoute(
       post,
       lit('user'),
-      response(
-        t.type({ code: t.literal(200), data: t.number })
-      ),
+      response(200, t.number),
       data(
         t.type({
           sessionId: t.number,
