@@ -14,19 +14,21 @@ import {
   sequenceS,
   createReferenceSchema,
   createObjectSchema,
+  getSchemaName,
 } from './helpers'
+import { MetadataByStatusCode } from '../Encoder'
 
 const withInterfaceType = (
-  decoder: t.InterfaceType<any, any, any, any>
+  encoder: t.InterfaceType<any, any, any, any>
 ): OpenAPIM<
   OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
 > =>
   pipe(
     sequenceS(
-      Object.keys(decoder.props)
+      Object.keys(encoder.props)
         .map<[string, OpenAPIM<any>]>((key) => [
           key,
-          withDecoder(decoder.props[key]),
+          withDecoder(encoder.props[key]),
         ])
         .reduce(
           (as, [key, val]) => ({ ...as, [key]: val }),
@@ -41,14 +43,14 @@ const withInterfaceType = (
     ),
     SE.map(createObjectSchema),
     SE.chain((schema) =>
-      nameIsDeliberate(decoder.name)
+      nameIsDeliberate(encoder.name)
         ? pipe(
             addSchema({
-              name: decoder.name,
+              name: encoder.name,
               schema: schema,
             }),
             SE.map(() =>
-              createReferenceSchema(decoder.name)
+              createReferenceSchema(encoder.name)
             )
           )
         : pure<
@@ -59,95 +61,126 @@ const withInterfaceType = (
   )
 
 const withRefinementType = (
-  decoder: t.RefinementType<any>
+  encoder: t.RefinementType<any>
 ): OpenAPIM<OpenAPIV3.SchemaObject> => {
-  switch (decoder.name) {
+  switch (encoder.name) {
     case 'Int':
       return pure({ type: 'integer' })
   }
   return SE.left(
-    `Could not find refinement type for "${decoder.name}"`
+    `Could not find refinement type for "${encoder.name}"`
   )
 }
 
 const withArrayType = (
-  decoder: t.ArrayType<any>
+  encoder: t.ArrayType<any>
 ): OpenAPIM<OpenAPIV3.SchemaObject> =>
   pipe(
-    withDecoder(decoder.type),
+    withDecoder(encoder.type),
     SE.map((inner) => ({ type: 'array', items: inner }))
   )
 
-// take a decoder and return it's main type and any additional schemas in State
+// take a encoder and return it's main type and any additional schemas in State
 export const withDecoder = (
-  decoder: t.Type<any>
+  encoder: t.Type<any>
 ): OpenAPIM<
   OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
 > => {
-  if (decoder instanceof t.InterfaceType) {
-    return withInterfaceType(decoder)
-  } else if (decoder instanceof t.StringType) {
+  if (encoder instanceof t.InterfaceType) {
+    return withInterfaceType(encoder)
+  } else if (encoder instanceof t.StringType) {
     return pure({ type: 'string' })
-  } else if (decoder instanceof t.BooleanType) {
+  } else if (encoder instanceof t.BooleanType) {
     return pure({ type: 'boolean' })
-  } else if (decoder instanceof t.NumberType) {
+  } else if (encoder instanceof t.NumberType) {
     return pure({ type: 'number' })
-  } else if (decoder instanceof t.RefinementType) {
-    return withRefinementType(decoder)
-  } else if (decoder instanceof t.ArrayType) {
-    return withArrayType(decoder)
+  } else if (encoder instanceof t.RefinementType) {
+    return withRefinementType(encoder)
+  } else if (encoder instanceof t.ArrayType) {
+    return withArrayType(encoder)
   }
-  return SE.left('No decoder found')
+  return SE.left('No encoder found')
 }
 
+// take apart an interface object, which should be of the form
+// { code: number, data: SomeResultType }
 const interfaceObject = (
-  decoder: t.InterfaceType<any>
+  encoder: t.InterfaceType<any>,
+  metadataByStatusCode: MetadataByStatusCode
 ): OpenAPIM<OpenAPIV3.ResponsesObject> => {
-  const code =
-    decoder?._tag === 'InterfaceType'
-      ? decoder.props?.code?.value
+  const statusCode =
+    encoder?._tag === 'InterfaceType'
+      ? encoder.props?.code?.value
       : 0
-  const data = {
-    description:
-      decoder.name || statusCodeDescription(code),
+
+  const metadata = metadataByStatusCode[statusCode] || {}
+
+  const schemaName = getSchemaName(metadata, encoder)
+
+  const data: OpenAPIV3.ResponseObject = {
+    description: statusCodeDescription(
+      statusCode,
+      metadata
+    ),
+    content: {
+      'application/json': {
+        schema: createReferenceSchema(schemaName),
+      },
+    },
   }
 
   const responses: OpenAPIV3.ResponsesObject = {
-    [code]: data,
+    [statusCode]: data,
   }
 
   return pipe(
-    decoder.props?.data
-      ? withDecoder(decoder.props.data)
-      : SE.left('No decoder props'),
+    encoder.props?.data
+      ? withDecoder(encoder.props.data)
+      : SE.left('No encoder props'),
 
     SE.chain((dataType) =>
-      addSchema({
-        name: decoder.name || statusCodeDescription(code),
-        schema: dataType,
-      })
+      !('$ref' in dataType) // don't save reference schemas
+        ? addSchema({
+            name: schemaName,
+            schema: dataType,
+          })
+        : pure(undefined)
     ),
 
     SE.map(() => responses)
   )
 }
 
-export const responsesObject = (
-  decoder: any // t.Type<any>
+export const getRouteResponses = (
+  encoder: t.Type<any>,
+  metadataByStatusCode: MetadataByStatusCode
 ): OpenAPIM<OpenAPIV3.ResponsesObject> => {
-  if (decoder instanceof t.InterfaceType) {
-    return interfaceObject(decoder)
-  } else if (decoder instanceof t.UnionType) {
+  if (encoder instanceof t.InterfaceType) {
+    return interfaceObject(encoder, metadataByStatusCode)
+  }
+
+  if (
+    encoder instanceof t.UnionType ||
+    encoder instanceof t.TaggedUnionType
+  ) {
     return pipe(
       sequenceStateEitherArray<OpenAPIV3.ResponsesObject>(
-        decoder.types.map(responsesObject)
+        encoder.types.map((enc: t.Type<any>) =>
+          getRouteResponses(enc, metadataByStatusCode)
+        )
       ),
       SE.map((responses) =>
         responses.reduce((as, a) => ({ ...as, ...a }), {})
       )
     )
   }
+
+  const tag =
+    '_tag' in encoder
+      ? (encoder as any)._tag
+      : 'type with no _tag'
+
   return SE.left(
-    `Response type expected to be interface or union type but instead got ${decoder._tag}`
+    `Response type expected to be interface or union type but instead got ${tag}`
   )
 }

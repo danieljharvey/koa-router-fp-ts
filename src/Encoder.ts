@@ -1,21 +1,49 @@
 import * as t from 'io-ts'
 
-type Metadata = {
-  example?: unknown
+export type Metadata = {
   description?: string
+  schemaName?: string
 }
 
-type MetadataByResponse = Record<number, Metadata>
+export type MetadataByStatusCode = Record<string, Metadata>
+
+export type WithEncoder<Input, Output> = {
+  type: 'Encoder'
+  encoder: t.Type<Input, Output, unknown>
+  metadata: MetadataByStatusCode
+}
+
+export type NoEncoder = { type: 'NoEncoder' }
 
 export type Encoder<Input, Output> =
-  | {
-      type: 'Encoder'
-      encoder: t.Type<Input, Output, unknown>
-      metadata: MetadataByResponse
-    }
-  | { type: 'NoEncoder' }
+  | WithEncoder<Input, Output>
+  | NoEncoder
 
-type GenericRec = Record<string, unknown>
+export const noEncoder: Encoder<never, never> = {
+  type: 'NoEncoder',
+}
+
+export const makeEncoder = <
+  StatusCode extends number,
+  Input,
+  Output
+>(
+  statusCode: StatusCode,
+  encoder: t.Type<Input, Output, unknown>,
+  metadata: Metadata = {}
+): WithEncoder<
+  { code: StatusCode; data: Input },
+  { code: StatusCode; data: Output }
+> => ({
+  type: 'Encoder',
+  encoder: t.type({
+    code: t.literal(statusCode),
+    data: encoder,
+  }),
+  metadata: {
+    [statusCode]: metadata,
+  },
+})
 
 export const or = <InputA, OutputA, InputB, OutputB>(
   a: Encoder<InputA, OutputA>,

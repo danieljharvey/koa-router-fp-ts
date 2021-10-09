@@ -3,8 +3,8 @@ import { OpenAPIV3 } from 'openapi-types'
 import {
   withDecoder,
   createOpenAPISpec,
-  responsesObject,
-  pathItemForRoute,
+  getRouteResponses,
+  getPathItemForRoute,
 } from './openapi'
 import * as t from 'io-ts'
 import {
@@ -29,19 +29,16 @@ import {
   evaluate,
 } from './types'
 
-const healthzDecoder = t.type(
-  {
-    code: t.literal(200),
-    data: t.string,
-  },
-  'Healthz'
-)
+const healthzDecoder = t.string
 
-const healthz = routeWithTaskHandler(
+const healthzHandler = routeWithTaskHandler(
   makeRoute(
     get,
     lit('healthz'),
-    response(healthzDecoder),
+    response(200, healthzDecoder, {
+      description: 'Success',
+      schemaName: 'HealthzResponse',
+    }),
     description(
       'Returns a 200 to indicate the service is running'
     )
@@ -60,11 +57,8 @@ const user = t.type(
 
 const userSuccessDecoder = t.type(
   {
-    code: t.literal(200),
-    data: t.type({
-      message: t.string,
-      users: t.array(user),
-    }),
+    message: t.string,
+    users: t.array(user),
   },
   'UserSuccess'
 )
@@ -73,7 +67,7 @@ const userHandler = routeWithTaskHandler(
   makeRoute(
     get,
     lit('user'),
-    response(userSuccessDecoder),
+    response(200, userSuccessDecoder),
     description('Returns a single user from the database')
   ),
   () =>
@@ -95,20 +89,11 @@ const infoPostData = t.type(
   'InfoPostData'
 )
 
-const infoSuccessDecoder = t.type(
-  {
-    code: t.literal(200),
-    data: t.string,
-  },
-  'InfoSuccess'
-)
+const infoSuccessDecoder = t.string
 
 const infoFailureDecoder = t.type(
   {
-    code: t.literal(500),
-    data: t.type({
-      errorMsg: t.string,
-    }),
+    errorMsg: t.string,
   },
   'InfoFailure'
 )
@@ -118,8 +103,13 @@ const infoHandler = routeWithTaskEitherHandler(
     post,
     data(infoPostData),
     lit('info'),
-    response(infoFailureDecoder),
-    response(infoSuccessDecoder),
+    response(500, infoFailureDecoder, {
+      description: 'Failed to fetch info',
+    }),
+    response(200, infoSuccessDecoder, {
+      schemaName: 'InfoSuccess',
+      description: 'Info fetched successfully',
+    }),
     description('Posted information')
   ),
   ({ data: { name, age } }) =>
@@ -173,19 +163,41 @@ describe('createOpenAPISpec', () => {
   })
 
   it('Kinda works', () => {
-    const json = createOpenAPISpec([healthz])
+    const json = createOpenAPISpec([healthzHandler])
 
     expect(json).not.toBeNull()
   })
 
-  it('responsesObject', () => {
+  it('getRouteResponses', () => {
     const resp = toEither(
-      responsesObject(healthzDecoder),
+      getRouteResponses(
+        t.type({
+          code: t.literal(200),
+          data: healthzDecoder,
+        }),
+        {
+          200: {
+            description: 'Successful OK great',
+            schemaName: 'Healthz',
+          },
+        }
+      ),
       initialState
     )
     expect(resp).toEqual(
       E.right([
-        { '200': { description: 'Healthz' } },
+        {
+          '200': {
+            description: 'Successful OK great',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/Healthz',
+                },
+              },
+            },
+          },
+        },
         {
           schemas: [
             {
@@ -198,9 +210,17 @@ describe('createOpenAPISpec', () => {
     )
   })
 
-  it('responsesObject with named decoders', () => {
+  it('getRouteResponses with named decoders', () => {
     const resp = toEither(
-      responsesObject(userSuccessDecoder),
+      getRouteResponses(
+        t.type({
+          code: t.literal(200),
+          data: userSuccessDecoder,
+        }),
+        {
+          200: { description: 'Success fetching user' },
+        }
+      ),
       initialState
     )
 
@@ -210,7 +230,18 @@ describe('createOpenAPISpec', () => {
       OpenAPIV3.ResponsesObject,
       OpenAPIState
     ] = [
-      { '200': { description: 'UserSuccess' } },
+      {
+        '200': {
+          description: 'Success fetching user',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/UserSuccess',
+              },
+            },
+          },
+        },
+      },
       {
         schemas: [
           {
@@ -250,7 +281,7 @@ describe('createOpenAPISpec', () => {
   it('Multiple routes', () => {
     const json = createOpenAPISpec([
       userHandler,
-      healthz,
+      healthzHandler,
       infoHandler,
     ])
 
@@ -264,7 +295,15 @@ describe('createOpenAPISpec', () => {
               'Returns a 200 to indicate the service is running',
             responses: {
               '200': {
-                description: 'Healthz',
+                description: 'Success',
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref:
+                        '#/components/schemas/HealthzResponse',
+                    },
+                  },
+                },
               },
             },
           },
@@ -275,7 +314,15 @@ describe('createOpenAPISpec', () => {
               'Returns a single user from the database',
             responses: {
               '200': {
-                description: 'UserSuccess',
+                description: 'Success',
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref:
+                        '#/components/schemas/UserSuccess',
+                    },
+                  },
+                },
               },
             },
           },
@@ -285,10 +332,26 @@ describe('createOpenAPISpec', () => {
             description: 'Posted information',
             responses: {
               '200': {
-                description: 'InfoSuccess',
+                description: 'Info fetched successfully',
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref:
+                        '#/components/schemas/InfoSuccess',
+                    },
+                  },
+                },
               },
               '500': {
-                description: 'InfoFailure',
+                description: 'Failed to fetch info',
+                content: {
+                  'application/json': {
+                    schema: {
+                      $ref:
+                        '#/components/schemas/InfoFailure',
+                    },
+                  },
+                },
               },
             },
           },
@@ -296,7 +359,7 @@ describe('createOpenAPISpec', () => {
       },
       components: {
         schemas: {
-          Healthz: {
+          HealthzResponse: {
             type: 'string',
           },
           InfoFailure: {
@@ -338,11 +401,11 @@ describe('createOpenAPISpec', () => {
     expect(json).toEqual(E.right(expected))
   })
 
-  it('pathItemForRoute', () => {
+  it('getPathItemForRoute', () => {
     const result = evaluate(
-      pathItemForRoute(
-        healthz.route,
-        healthz.route.responseEncoder
+      getPathItemForRoute(
+        healthzHandler.route,
+        healthzHandler.route.responseEncoder
       )
     )
     expect((result as any).right.url).toEqual('/healthz')

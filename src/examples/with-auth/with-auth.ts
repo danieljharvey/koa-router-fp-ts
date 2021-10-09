@@ -98,7 +98,10 @@ const getUsersRoute = makeRoute(
   get,
   headers(t.type({ session: numberDecoder })),
   lit('users'),
-  response(403, notAuthResponse),
+  response(403, notAuthResponse, {
+    description:
+      'Returned when user is not authorised to access this API',
+  }),
   response(200, usersResponse)
 )
 

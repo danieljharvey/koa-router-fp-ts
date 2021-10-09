@@ -38,17 +38,10 @@ const getUserRoute = makeRoute(
   get,
   lit('user'),
   param('id', numberDecoder),
-  response(
-    400,
-    userNotFoundResponse,
-    'User not found',
-    'The user could not be found'
-  ),
-  response(200, userResponse, {
-    name: 'Mr Dog',
-    age: 100,
-    birthday: '1981-01-01',
-  })
+  response(400, userNotFoundResponse, {
+    description: 'The user could not be found',
+  }),
+  response(200, userResponse)
 )
 
 type UserRouteInput = HandlerInput<typeof getUserRoute>

@@ -15,8 +15,8 @@ import {
 } from './types'
 import * as SE from 'fp-ts-contrib/StateEither'
 import * as E from 'fp-ts/Either'
-import { responsesObject } from './io-ts'
-export { withDecoder, responsesObject } from './io-ts'
+import { getRouteResponses } from './io-ts'
+export { withDecoder, getRouteResponses } from './io-ts'
 
 type AnyHandler = RouteWithHandler<
   any,
@@ -33,7 +33,7 @@ export const createOpenAPISpec = (
   const x = pipe(
     sequenceStateEitherArray(
       handlers.map((rwh) =>
-        pathItemForRoute(
+        getPathItemForRoute(
           rwh.route,
           rwh.route.responseEncoder
         )
@@ -81,14 +81,17 @@ const getHttpMethod = (
     ? pure(route.method.value.toLowerCase())
     : throwError('Route has no HTTP method')
 
-export const pathItemForRoute = (
+export const getPathItemForRoute = (
   route: AnyHandler['route'],
   responseEncoder: Encoder<any, any>
 ): OpenAPIM<PathItem> =>
   pipe(
     sequenceT(
       responseEncoder.type === 'Encoder'
-        ? responsesObject(responseEncoder.encoder)
+        ? getRouteResponses(
+            responseEncoder.encoder,
+            responseEncoder.metadata
+          )
         : throwError('No response decoder'),
       getHttpMethod(route)
     ),
