@@ -3,6 +3,7 @@ import * as O from 'fp-ts/Option'
 
 import { routeLiteral, routeParam } from './RouteItem'
 import { EmptyRec, Route, emptyRoute } from './Route'
+import * as E from './Encoder'
 
 export const get: Route = {
   ...emptyRoute,
@@ -26,26 +27,17 @@ export const response = <
 >(
   statusCode: StatusCode,
   encoder: t.Type<ResponseInput, ResponseOutput, unknown>,
-  example?: ResponseOutput,
-  description?: string
+  metadata: E.Metadata = {}
 ): Route<
   { code: StatusCode; data: ResponseInput },
   { code: StatusCode; data: ResponseOutput }
 > => ({
   ...emptyRoute,
-  responseEncoder: {
-    type: 'Encoder',
-    encoder: t.type({
-      code: t.literal(statusCode),
-      data: encoder,
-    }),
-    metadata: {
-      [statusCode]: {
-        example,
-        description,
-      },
-    },
-  },
+  responseEncoder: E.makeEncoder(
+    statusCode,
+    encoder,
+    metadata
+  ),
 })
 
 export const param = <ParamName extends string, Param>(
@@ -99,3 +91,7 @@ export const headers = <Headers>(
     decoder: headersDecoder,
   },
 })
+
+export const description = (
+  description: string
+): Route => ({ ...emptyRoute, description: [description] })
