@@ -1,8 +1,12 @@
-import { routes, param } from './routeCombinators'
+import { lit, routes, param } from './routeCombinators'
 import { emptyRoute } from './Route'
 import { routeLiteral, routeParam } from './RouteItem'
 import * as t from 'io-ts'
 import { makeRoute } from './makeRoute'
+
+// this function won't type check if Typescript doesn't think the two args
+// are the same
+const areTypeEqual = <A>(a: A, b: A) => true
 
 describe('routes', () => {
   it('has no interpolated', () => {
@@ -34,6 +38,7 @@ describe('routes', () => {
       expect(result1.paramDecoder).toEqual(
         idParam.paramDecoder
       )
+      expect(areTypeEqual(result1, idParam)).toBeTruthy()
     })
 
     it('two items', () => {
@@ -45,6 +50,7 @@ describe('routes', () => {
       expect(JSON.stringify(result2.paramDecoder)).toEqual(
         JSON.stringify(expected.paramDecoder)
       )
+      expect(areTypeEqual(result2, expected)).toBeTruthy()
     })
     it('two items, no slash', () => {
       const result3 = routes`${idParam}${nameParam}`
@@ -55,10 +61,18 @@ describe('routes', () => {
       expect(JSON.stringify(result3.paramDecoder)).toEqual(
         JSON.stringify(expected.paramDecoder)
       )
+      expect(areTypeEqual(result3, expected)).toBeTruthy()
     })
   })
 
   it('interleaves literals and params correctly', () => {
+    const equivalentRoute = makeRoute(
+      lit('home'),
+      lit('users'),
+      param('userId', t.string),
+      lit('thanks')
+    )
+
     const expected = [
       routeLiteral('home'),
       routeLiteral('users'),
@@ -69,6 +83,9 @@ describe('routes', () => {
     const userId = param('userId', t.string)
     const result = routes`home/users/${userId}/thanks`
 
+    expect(
+      areTypeEqual(result, equivalentRoute)
+    ).toBeTruthy()
     expect(result.parts).toEqual(expected)
   })
 })

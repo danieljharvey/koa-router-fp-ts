@@ -7,7 +7,7 @@ import * as E from './Encoder'
 
 export type GenericRec = Record<string, unknown>
 
-export type EmptyRec = Record<string, never>
+export type EmptyRec = Record<never, never>
 
 // Route is the basic type under everything.
 // It is designed Monoidally so a Route is made by combining multiple Routes
