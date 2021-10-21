@@ -1,6 +1,6 @@
 import { AnyRoute, CombinedRoute, combine } from './Route'
 
-type CR<A, B> = CombinedRoute<A, B>
+export type CR<A, B> = CombinedRoute<A, B>
 
 export function makeRoute<A extends AnyRoute>(a: A): A
 export function makeRoute<
