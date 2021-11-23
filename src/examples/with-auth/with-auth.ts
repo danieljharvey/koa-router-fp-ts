@@ -5,14 +5,13 @@ import * as TE from 'fp-ts/TaskEither'
 
 import {
   HandlerInput,
-  routeWithTaskEitherHandler,
+  taskEitherHandler,
   makeRoute,
   get,
-  headers,
+  header,
   param,
   lit,
   response,
-  numberDecoder,
   respond,
 } from '../../index'
 
@@ -47,9 +46,9 @@ const userResponse = t.type({
 
 const getUserRoute = makeRoute(
   get,
-  headers(t.type({ session: numberDecoder })),
+  header('session', t.NumberFromString),
   lit('user'),
-  param('id', numberDecoder),
+  param('id', t.NumberFromString),
   response(403, notAuthResponse),
   response(200, userResponse),
   response(400, userNotFoundResponse)
@@ -79,7 +78,7 @@ const getUserHandler = ({
     : TE.left(respond(400, 'User not found' as const))
 }
 
-export const getUser = routeWithTaskEitherHandler(
+export const getUser = taskEitherHandler(
   getUserRoute,
   flow(checkAuth, TE.chainW(getUserHandler))
 )
@@ -96,7 +95,8 @@ const usersResponse = t.array(
 
 const getUsersRoute = makeRoute(
   get,
-  headers(t.type({ session: numberDecoder })),
+  header('session', t.NumberFromString),
+  header('optional', t.union([t.undefined, t.string])),
   lit('users'),
   response(403, notAuthResponse, {
     description:
@@ -117,7 +117,7 @@ const getUsersHandler = ({
   return T.of(respond(200, users))
 }
 
-export const getUsers = routeWithTaskEitherHandler(
+export const getUsers = taskEitherHandler(
   getUsersRoute,
   flow(checkAuth, TE.chainTaskK(getUsersHandler))
 )

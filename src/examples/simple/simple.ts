@@ -1,18 +1,16 @@
 import * as t from 'io-ts'
 import * as E from 'fp-ts/Either'
-import { DateFromISOString } from 'io-ts-types'
 
 import {
-  HandlerInput,
   makeRoute,
   get,
   param,
   lit,
   response,
-  numberDecoder,
-  routeWithEitherHandler,
-  routeWithPureHandler,
+  eitherHandler,
+  pureHandler,
   respond,
+  HandlerForRoute,
 } from '../../index'
 
 type User = { name: string; age: number; birthday: Date }
@@ -31,31 +29,29 @@ const userNotFoundResponse = t.string
 const userResponse = t.type({
   name: t.string,
   age: t.number,
-  birthday: DateFromISOString,
+  birthday: t.DateFromISOString,
 })
 
 const getUserRoute = makeRoute(
   get,
   lit('user'),
-  param('id', numberDecoder),
+  param('id', t.NumberFromString),
   response(400, userNotFoundResponse, {
     description: 'The user could not be found',
   }),
   response(200, userResponse)
 )
 
-type UserRouteInput = HandlerInput<typeof getUserRoute>
-
-const getUserHandler = ({
-  params: { id },
-}: UserRouteInput) => {
+const getUserHandler: HandlerForRoute<
+  typeof getUserRoute
+> = ({ params: { id } }) => {
   const user = userData[id]
   return user
     ? E.right(respond(200, user))
     : E.left(respond(400, 'User not found'))
 }
 
-export const getUser = routeWithEitherHandler(
+export const getUser = eitherHandler(
   getUserRoute,
   getUserHandler
 )
@@ -75,15 +71,15 @@ const getUsersRoute = makeRoute(
   response(200, usersResponse)
 )
 
-const getUsersHandler = () => {
+const getUsersHandler: HandlerForRoute<
+  typeof getUsersRoute
+> = () => {
   const users = Object.values(userData)
 
   return respond(200, users)
 }
 
-export const getUsers = routeWithPureHandler(
+export const getUsers = pureHandler(
   getUsersRoute,
   getUsersHandler
 )
-
-// post user

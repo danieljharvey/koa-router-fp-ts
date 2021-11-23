@@ -18,9 +18,15 @@ const showRouteItem = (routeItem: RouteItem): string => {
       return routeItem.literal
     case 'Param':
       return `:${routeItem.name}`
+    default:
+      return explode(routeItem)
   }
+}
+
+const explode = (_: never) => {
+  throw new Error('Route items are broken somehow')
 }
 
 export const showRouteItems = (
   routeItems: RouteItem[]
-): string => '/' + routeItems.map(showRouteItem).join('/')
+): string => `/${routeItems.map(showRouteItem).join('/')}`

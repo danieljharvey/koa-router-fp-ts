@@ -1,9 +1,16 @@
 import { OpenAPIV3 } from 'openapi-types'
-import { RouteWithHandler } from '../Handler'
-import { Encoder } from '../Encoder'
-import { showRouteItems } from '../RouteItem'
 import { pipe } from 'fp-ts/function'
+import * as SE from 'fp-ts-contrib/StateEither'
+import * as E from 'fp-ts/Either'
+import * as O from 'fp-ts/Option'
+
+import { AnyRouteWithHandler } from '../types/Handler'
+import { Router, RouterMetadata } from '../types/Router'
+import { Encoder } from '../types/Encoder'
+import { showRouteItems } from '../types/RouteItem'
+
 import {
+  OpenAPIState,
   OpenAPIM,
   PathItem,
   toEither,
@@ -12,27 +19,21 @@ import {
   throwError,
   sequenceStateEitherArray,
   sequenceT,
+  NamedSchema,
 } from './types'
-import * as SE from 'fp-ts-contrib/StateEither'
-import * as E from 'fp-ts/Either'
-import { getRouteResponses } from './io-ts'
-export { withDecoder, getRouteResponses } from './io-ts'
+import {
+  getRequestBodyType,
+  getRouteResponses,
+} from './io-ts'
 
-type AnyHandler = RouteWithHandler<
-  any,
-  any,
-  any,
-  any,
-  any,
-  any
->
+export { withEncoder, getRouteResponses } from './io-ts'
 
 export const createOpenAPISpec = (
-  handlers: AnyHandler[]
-): E.Either<string, OpenAPIV3.Document> => {
-  const x = pipe(
+  router: Router
+): E.Either<string, OpenAPIV3.Document> =>
+  pipe(
     sequenceStateEitherArray(
-      handlers.map((rwh) =>
+      router.routeHandlers.map((rwh) =>
         getPathItemForRoute(
           rwh.route,
           rwh.route.responseEncoder
@@ -40,49 +41,83 @@ export const createOpenAPISpec = (
       )
     ),
     (se) => toEither(se, initialState),
-    E.map(
-      ([pathItems, { schemas }]) =>
-        ({
-          openapi: '3.0.0',
-          info: { title: 'My API', version: '1.0.0' },
-          paths: resultsToPaths(pathItems),
-          components: {
-            schemas: schemas.reduce(
-              (as, a) => ({ ...as, [a.name]: a.schema }),
-              {}
-            ),
-          },
-        } as OpenAPIV3.Document)
-    )
+    E.map(createOpenAPIDocument(router.metadata))
   )
 
-  return x
-}
+const openAPIInfo = (
+  metadata: Partial<RouterMetadata>
+): OpenAPIV3.InfoObject => ({
+  title: metadata.title || 'My API',
+  description: metadata.description || 'My service',
+  version: metadata.version || '1.0.0',
+})
+
+const createOpenAPIDocument = (
+  metadata: Partial<RouterMetadata>
+) => ([pathItems, { schemas }]: [
+  PathItem[],
+  OpenAPIState
+]): OpenAPIV3.Document =>
+  ({
+    openapi: '3.0.0',
+    info: openAPIInfo(metadata),
+    paths: resultsToPaths(pathItems),
+    components: {
+      schemas: schemas.reduce(combineSchemas, {}),
+    },
+  } as OpenAPIV3.Document)
+
+const combineSchemas = (
+  all: OpenAPIV3.ComponentsObject,
+  schema: NamedSchema
+): OpenAPIV3.ComponentsObject => ({
+  ...all,
+  [schema.name]: schema.schema,
+})
 
 const resultsToPaths = (
   pathItems: PathItem[]
 ): OpenAPIV3.Document['paths'] =>
-  pathItems.reduce(
-    (obj, { url, pathItem }) => ({
+  pathItems.reduce((obj, { url, pathItem }) => {
+    const currentItems = obj[url] || {}
+    const newPathItem = { ...currentItems, ...pathItem }
+    return {
       ...obj,
-      [url]: pathItem,
-    }),
-    {} as OpenAPIV3.Document['paths']
-  )
+      [url]: newPathItem,
+    }
+  }, {} as OpenAPIV3.Document['paths'])
 
 const getPathDescription = (
-  route: AnyHandler['route']
+  route: AnyRouteWithHandler['route']
 ): string => route.description.join('\n')
 
+const getPathSummary = (
+  route: AnyRouteWithHandler['route']
+): string =>
+  route.summary.length > 0
+    ? route.summary.join('\n')
+    : showRouteItems(route.parts)
+
 const getHttpMethod = (
-  route: AnyHandler['route']
+  route: AnyRouteWithHandler['route']
 ): OpenAPIM<string> =>
+  // eslint-disable-next-line no-underscore-dangle
   route.method._tag === 'Some'
     ? pure(route.method.value.toLowerCase())
     : throwError('Route has no HTTP method')
 
+const getRequestBody = (
+  route: AnyRouteWithHandler['route']
+): OpenAPIM<O.Option<OpenAPIV3.RequestBodyObject>> =>
+  route.dataDecoder.type === 'Decoder'
+    ? pipe(
+        getRequestBodyType(route.dataDecoder.decoder),
+        SE.map(O.some)
+      )
+    : pure(O.none)
+
 export const getPathItemForRoute = (
-  route: AnyHandler['route'],
+  route: AnyRouteWithHandler['route'],
   responseEncoder: Encoder<any, any>
 ): OpenAPIM<PathItem> =>
   pipe(
@@ -93,14 +128,17 @@ export const getPathItemForRoute = (
             responseEncoder.metadata
           )
         : throwError('No response decoder'),
-      getHttpMethod(route)
+      getHttpMethod(route),
+      getRequestBody(route)
     ),
-    SE.map(([responses, method]) => ({
+    SE.map(([responses, method, requestBody]) => ({
       url: showRouteItems(route.parts),
       pathItem: {
         [method]: {
           description: getPathDescription(route),
+          summary: getPathSummary(route),
           responses,
+          requestBody: O.toUndefined(requestBody),
         },
       },
     }))

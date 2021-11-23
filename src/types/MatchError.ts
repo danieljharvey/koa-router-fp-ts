@@ -1,4 +1,3 @@
-import reporter from 'io-ts-reporters'
 import * as E from 'fp-ts/Either'
 import * as t from 'io-ts'
 
@@ -18,7 +17,7 @@ export const validationError = (
 ) => (errors: t.Errors) => ({
   type: 'ValidationError' as const,
   which,
-  message: reporter.report(E.left(errors)),
+  message: t.SafeReporter.report(E.left(errors)),
 })
 
 export const noResponseValidator = () => ({
