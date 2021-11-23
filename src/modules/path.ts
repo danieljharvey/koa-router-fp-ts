@@ -1,5 +1,5 @@
-import { RouteItem, routeLiteral } from './types/RouteItem'
-import { AnyRoute, Route, emptyRoute } from './types/Route'
+import { RouteItem, routeLiteral } from '../types/RouteItem'
+import { AnyRoute, Route, emptyRoute } from '../types/Route'
 import { CR, makeRoute } from './makeRoute'
 
 /**

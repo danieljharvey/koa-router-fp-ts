@@ -9,8 +9,8 @@ import {
   data,
   header,
 } from '../index'
-import { matchRoute } from '../matchRoute'
-import { makeRoute } from '../makeRoute'
+import { matchRoute } from '../modules/matchRoute'
+import { makeRoute } from '../modules/makeRoute'
 
 const healthz = makeRoute(get, lit('healthz'))
 

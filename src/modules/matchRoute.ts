@@ -7,8 +7,8 @@ import {
   MatchError,
   validationError,
   noMatch,
-} from './types/MatchError'
-import { Route } from './types/Route'
+} from '../types/MatchError'
+import { Route } from '../types/Route'
 import {
   splitUrl,
   getDefaults,
@@ -16,7 +16,7 @@ import {
   matchRouteItem,
   flattenParams,
   parseQueryParams,
-} from './helpers/matchHelpers'
+} from '../helpers/matchHelpers'
 
 export type MatchedRoute<Param, Query, Data, Headers> = {
   params: Param

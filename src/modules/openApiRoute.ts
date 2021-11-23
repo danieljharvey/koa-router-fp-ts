@@ -6,8 +6,8 @@ import { eitherHandler } from './handlers'
 import { response, lit } from './routeCombinators'
 import { get } from './httpMethods'
 import { makeRoute } from './makeRoute'
-import { createOpenAPISpec } from './openapi/openapi'
-import { Router } from './types/Router'
+import { createOpenAPISpec } from '../openapi/openapi'
+import { Router } from '../types/Router'
 import { respond } from './respond'
 
 const openAPIRoute = (openAPIPath: string) =>

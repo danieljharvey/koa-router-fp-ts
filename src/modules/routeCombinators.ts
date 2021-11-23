@@ -1,8 +1,11 @@
 import * as t from 'io-ts'
 
-import { routeLiteral, routeParam } from './types/RouteItem'
-import { EmptyRec, Route, emptyRoute } from './types/Route'
-import * as E from './types/Encoder'
+import {
+  routeLiteral,
+  routeParam,
+} from '../types/RouteItem'
+import { EmptyRec, Route, emptyRoute } from '../types/Route'
+import * as E from '../types/Encoder'
 
 // NOTE: this file is in prettierignore as the Typescript string interpolations
 // break Prettier. Once Prettier is updated (2.4.1 was fine, perhaps earlier),

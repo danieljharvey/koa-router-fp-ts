@@ -2,8 +2,11 @@ import * as t from 'io-ts'
 
 import { lit, param } from './routeCombinators'
 import { path } from './path'
-import { emptyRoute } from './types/Route'
-import { routeLiteral, routeParam } from './types/RouteItem'
+import { emptyRoute } from '../types/Route'
+import {
+  routeLiteral,
+  routeParam,
+} from '../types/RouteItem'
 import { makeRoute } from './makeRoute'
 
 // this function won't type check if Typescript doesn't think the two args

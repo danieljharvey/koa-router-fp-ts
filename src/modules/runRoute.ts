@@ -7,9 +7,9 @@ import {
   MatchError,
   MatchValidationError,
   noResponseValidator,
-} from './types/MatchError'
-import { RouteWithHandler } from './types/Handler'
-import * as Enc from './types/Encoder'
+} from '../types/MatchError'
+import { RouteWithHandler } from '../types/Handler'
+import * as Enc from '../types/Encoder'
 
 export const runRouteWithHandler = <
   ResponseInput extends { code: number; data: unknown },

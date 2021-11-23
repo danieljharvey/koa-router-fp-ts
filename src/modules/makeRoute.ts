@@ -2,7 +2,7 @@ import {
   AnyRoute,
   CombinedRoute,
   combine,
-} from './types/Route'
+} from '../types/Route'
 
 export type CR<A, B> = CombinedRoute<A, B>
 

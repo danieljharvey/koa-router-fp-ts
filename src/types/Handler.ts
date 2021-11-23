@@ -2,7 +2,7 @@ import * as T from 'fp-ts/Task'
 import * as TE from 'fp-ts/TaskEither'
 import * as E from 'fp-ts/Either'
 
-import { MatchedRoute } from '../matchRoute'
+import { MatchedRoute } from '../modules/matchRoute'
 
 import { Route } from './Route'
 

@@ -5,8 +5,8 @@ import * as NE from 'fp-ts/NonEmptyArray'
 import * as A from 'fp-ts/Array'
 
 import { runRouteWithHandler } from './runRoute'
-import { neAltMany } from './helpers/neAltMany'
-import { Router } from './types/Router'
+import { neAltMany } from '../helpers/neAltMany'
+import { Router } from '../types/Router'
 import { openAPIHandler } from './openApiRoute'
 
 /**

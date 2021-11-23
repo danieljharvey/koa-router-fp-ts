@@ -1,6 +1,6 @@
 import * as O from 'fp-ts/Option'
 
-import { Route, emptyRoute } from './types/Route'
+import { Route, emptyRoute } from '../types/Route'
 
 /**
  * Makes a route into a GET route.

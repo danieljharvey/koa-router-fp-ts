@@ -3,7 +3,7 @@ import * as TE from 'fp-ts/TaskEither'
 import * as E from 'fp-ts/Either'
 import { flow } from 'fp-ts/lib/function'
 
-import { Route } from './types/Route'
+import { Route } from '../types/Route'
 import {
   RouteWithHandler,
   TaskEitherHandler,
@@ -11,7 +11,7 @@ import {
   PureHandler,
   EitherHandler,
   TaskHandler,
-} from './types/Handler'
+} from '../types/Handler'
 
 /* I heard you love giant type signatures, this is the file with the giant type signatures */
 
