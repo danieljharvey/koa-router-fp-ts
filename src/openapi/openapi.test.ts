@@ -1,12 +1,10 @@
 import { OpenAPIV3 } from 'openapi-types'
-
-import {
-  withDecoder,
-  createOpenAPISpec,
-  getRouteResponses,
-  getPathItemForRoute,
-} from './openapi'
 import * as t from 'io-ts'
+import * as E from 'fp-ts/Either'
+import * as TE from 'fp-ts/TaskEither'
+import * as T from 'fp-ts/Task'
+import * as tt from 'io-ts-types'
+
 import {
   makeRoute,
   lit,
@@ -14,14 +12,20 @@ import {
   data,
   post,
   response,
-  routeWithTaskHandler,
-  routeWithTaskEitherHandler,
+  taskHandler,
+  taskEitherHandler,
   respond,
   description,
+  summary,
+  createRouter,
 } from '../index'
-import * as E from 'fp-ts/Either'
-import * as TE from 'fp-ts/TaskEither'
-import * as T from 'fp-ts/Task'
+
+import {
+  withEncoder,
+  createOpenAPISpec,
+  getRouteResponses,
+  getPathItemForRoute,
+} from './openapi'
 import {
   OpenAPIState,
   initialState,
@@ -29,9 +33,9 @@ import {
   evaluate,
 } from './types'
 
-const healthzDecoder = t.string
+const healthzDecoder = t.literal('OK')
 
-const healthzHandler = routeWithTaskHandler(
+const healthzHandler = taskHandler(
   makeRoute(
     get,
     lit('healthz'),
@@ -63,7 +67,7 @@ const userSuccessDecoder = t.type(
   'UserSuccess'
 )
 
-const userHandler = routeWithTaskHandler(
+const userGetHandler = taskHandler(
   makeRoute(
     get,
     lit('user'),
@@ -81,6 +85,25 @@ const userHandler = routeWithTaskHandler(
     )
 )
 
+const userPostHandler = taskHandler(
+  makeRoute(
+    post,
+    lit('user'),
+    data(t.type({ id: t.number, name: t.string })),
+    response(200, userSuccessDecoder),
+    description('Saves a user to the database')
+  ),
+  ({ data: { id, name } }) =>
+    T.of(
+      respond(200, {
+        message: 'OK',
+        users: [
+          { userId: id, firstName: 'Mr', surname: name },
+        ],
+      })
+    )
+)
+
 const infoPostData = t.type(
   {
     name: t.string,
@@ -89,16 +112,19 @@ const infoPostData = t.type(
   'InfoPostData'
 )
 
-const infoSuccessDecoder = t.string
+const infoSuccessDecoder = t.union([t.string, t.number])
 
-const infoFailureDecoder = t.type(
-  {
-    errorMsg: t.string,
-  },
+const infoFailureDecoder = t.intersection(
+  [
+    t.type({
+      errorMsg: t.string,
+    }),
+    t.partial({ optionalStuff: t.string }),
+  ],
   'InfoFailure'
 )
 
-const infoHandler = routeWithTaskEitherHandler(
+const infoHandler = taskEitherHandler(
   makeRoute(
     post,
     data(infoPostData),
@@ -110,62 +136,292 @@ const infoHandler = routeWithTaskEitherHandler(
       schemaName: 'InfoSuccess',
       description: 'Info fetched successfully',
     }),
-    description('Posted information')
+    description('Posted information'),
+    summary('Information')
   ),
   ({ data: { name, age } }) =>
     age > 18
-      ? TE.right({
-          code: 200 as const,
-          data: `Great job, ${name}`,
-        })
-      : TE.left({
-          code: 500 as const,
-          data: { errorMsg: 'Oh no' },
-        })
+      ? TE.right(respond(200, `Great job, ${name}`))
+      : TE.left(respond(500, { errorMsg: 'Oh no' }))
 )
 
 describe('createOpenAPISpec', () => {
-  it('withDecoder primitives', () => {
-    expect(evaluate(withDecoder(t.string))).toEqual(
-      E.right({ type: 'string' })
-    )
-    expect(evaluate(withDecoder(t.boolean))).toEqual(
-      E.right({ type: 'boolean' })
-    )
-    expect(evaluate(withDecoder(t.number))).toEqual(
-      E.right({ type: 'number' })
-    )
-    expect(evaluate(withDecoder(t.Int))).toEqual(
-      E.right({ type: 'integer' })
-    )
-  })
-  it('withDecoder combinators', () => {
-    expect(
-      evaluate(withDecoder(t.array(t.string)))
-    ).toEqual(
-      E.right({ type: 'array', items: { type: 'string' } })
-    )
-    expect(
-      evaluate(
-        withDecoder(
-          t.type({ one: t.string, two: t.number })
-        )
+  describe('withEncoder', () => {
+    it('withEncoder primitives', () => {
+      expect(evaluate(withEncoder(t.string))).toEqual(
+        E.right({ type: 'string' })
       )
-    ).toEqual(
-      E.right({
-        type: 'object',
-        properties: {
-          one: { type: 'string' },
-          two: { type: 'number' },
-        },
+      expect(evaluate(withEncoder(t.boolean))).toEqual(
+        E.right({ type: 'boolean' })
+      )
+      expect(evaluate(withEncoder(t.number))).toEqual(
+        E.right({ type: 'number' })
+      )
+      expect(evaluate(withEncoder(t.Int))).toEqual(
+        E.right({ type: 'integer' })
+      )
+    })
+    it('array', () => {
+      expect(
+        evaluate(withEncoder(t.array(t.string)))
+      ).toEqual(
+        E.right({
+          type: 'array',
+          items: { type: 'string' },
+        })
+      )
+    })
+    it('type', () => {
+      expect(
+        evaluate(
+          withEncoder(
+            t.type({ one: t.string, two: t.number })
+          )
+        )
+      ).toEqual(
+        E.right({
+          type: 'object',
+          properties: {
+            one: { type: 'string' },
+            two: { type: 'number' },
+          },
+          required: ['one', 'two'],
+        })
+      )
+    })
+
+    it('keyOf', () => {
+      expect(
+        evaluate(
+          withEncoder(
+            t.keyof({ Horse: 0, Course: 0, Morse: 0 })
+          )
+        )
+      ).toEqual(
+        E.right({
+          type: 'string',
+          enum: ['Horse', 'Course', 'Morse'],
+        })
+      )
+    })
+    it('union of string literals creates enum', () => {
+      expect(
+        evaluate(
+          withEncoder(
+            t.union([
+              t.literal('Horse'),
+              t.literal('Course'),
+              t.literal('Morse'),
+            ])
+          )
+        )
+      ).toEqual(
+        E.right({
+          type: 'string',
+          enum: ['Horse', 'Course', 'Morse'],
+        })
+      )
+    })
+    it('union of number literals creates enum', () => {
+      expect(
+        evaluate(
+          withEncoder(
+            t.union([
+              t.literal(1),
+              t.literal(2),
+              t.literal(3),
+            ])
+          )
+        )
+      ).toEqual(
+        E.right({
+          type: 'string',
+          enum: ['1', '2', '3'],
+        })
+      )
+    })
+    it('union of boolean literals creates enum', () => {
+      expect(
+        evaluate(
+          withEncoder(
+            t.union([t.literal(true), t.literal(false)])
+          )
+        )
+      ).toEqual(
+        E.right({
+          type: 'string',
+          enum: ['true', 'false'],
+        })
+      )
+    })
+
+    describe('specific encoders work', () => {
+      it('Null', () => {
+        expect(evaluate(withEncoder(t.null))).toEqual(
+          E.right({ type: 'object', nullable: true })
+        )
       })
-    )
+      it('Undefined', () => {
+        expect(evaluate(withEncoder(t.undefined))).toEqual(
+          E.right({ type: 'object', nullable: true })
+        )
+      })
+      it('Unknown', () => {
+        expect(evaluate(withEncoder(t.unknown))).toEqual(
+          E.right({ type: 'object' })
+        )
+      })
+
+      it('Date', () => {
+        expect(evaluate(withEncoder(tt.date))).toEqual(
+          E.right({ type: 'string', format: 'date' })
+        )
+      })
+      it('String literal', () => {
+        expect(
+          evaluate(withEncoder(t.literal('OK')))
+        ).toEqual(
+          E.right({ type: 'string', example: 'OK' })
+        )
+      })
+      it('Number literal', () => {
+        expect(
+          evaluate(withEncoder(t.literal(123)))
+        ).toEqual(
+          E.right({ type: 'number', example: '123' })
+        )
+      })
+      it('Boolean literal', () => {
+        expect(
+          evaluate(withEncoder(t.literal(true)))
+        ).toEqual(
+          E.right({ type: 'boolean', example: 'true' })
+        )
+      })
+      it(`BigIntFromString`, () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.BigIntFromString))
+          )
+        ).toEqual(true)
+      })
+      it(`BooleanFromNumber`, () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.BooleanFromNumber))
+          )
+        ).toEqual(true)
+      })
+      it(`BooleanFromString`, () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.BooleanFromString))
+          )
+        ).toEqual(true)
+      })
+      it.skip(`Either(string,number)`, () => {
+        expect(
+          E.isRight(
+            evaluate(
+              withEncoder(tt.either(t.string, t.number))
+            )
+          )
+        ).toEqual(true)
+      })
+      it(`DateFromISOString`, () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.DateFromISOString))
+          )
+        ).toEqual(true)
+      })
+      it(`DateFromNumber`, () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.DateFromNumber))
+          )
+        ).toEqual(true)
+      })
+      it(`DateFromUnixTime`, () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.DateFromUnixTime))
+          )
+        ).toEqual(true)
+      })
+      it(`IntFromString`, () => {
+        expect(
+          E.isRight(evaluate(withEncoder(tt.IntFromString)))
+        ).toEqual(true)
+      })
+      // need to fix third generic vars in t.Type around the lib to accept this one
+      /*
+    it(`JsonFromString`, () => {
+      expect(
+        E.isRight(evaluate(withEncoder(t.JsonFromString)))
+      ).toEqual(true)
+    })
+    */
+      it.skip(`NonEmptyArray(string)`, () => {
+        expect(
+          E.isRight(
+            evaluate(
+              withEncoder(tt.nonEmptyArray(t.string))
+            )
+          )
+        ).toEqual(true)
+      })
+      it('NonEmptyString', () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.NonEmptyString))
+          )
+        ).toEqual(true)
+      })
+      it('NumberFromString', () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.NumberFromString))
+          )
+        ).toEqual(true)
+      })
+      it.skip('Option(string)', () => {
+        expect(
+          E.isRight(
+            evaluate(withEncoder(tt.option(t.string)))
+          )
+        ).toEqual(true)
+      })
+      it.skip('ReadonlyNonEmptyArray(string)', () => {
+        expect(
+          E.isRight(
+            evaluate(
+              withEncoder(
+                tt.readonlyNonEmptyArray(t.string)
+              )
+            )
+          )
+        ).toEqual(true)
+      })
+      it('RegExp', () => {
+        expect(
+          E.isRight(evaluate(withEncoder(tt.regexp)))
+        ).toEqual(true)
+      })
+      it('UUID', () => {
+        expect(
+          E.isRight(evaluate(withEncoder(tt.UUID)))
+        ).toEqual(true)
+      })
+    })
   })
 
   it('Kinda works', () => {
-    const json = createOpenAPISpec([healthzHandler])
+    const json = createOpenAPISpec(
+      createRouter([healthzHandler])
+    )
 
-    expect(json).not.toBeNull()
+    expect(json).not.toEqual(null)
   })
 
   it('getRouteResponses', () => {
@@ -202,7 +458,7 @@ describe('createOpenAPISpec', () => {
           schemas: [
             {
               name: 'Healthz',
-              schema: { type: 'string' },
+              schema: { type: 'string', example: 'OK' },
             },
           ],
         },
@@ -223,8 +479,6 @@ describe('createOpenAPISpec', () => {
       ),
       initialState
     )
-
-    const json = createOpenAPISpec([userHandler])
 
     const expected: [
       OpenAPIV3.ResponsesObject,
@@ -253,6 +507,7 @@ describe('createOpenAPISpec', () => {
                 surname: { type: 'string' },
                 userId: { type: 'number' },
               },
+              required: ['userId', 'firstName', 'surname'],
             },
           },
 
@@ -269,6 +524,7 @@ describe('createOpenAPISpec', () => {
                   },
                 },
               },
+              required: ['message', 'users'],
             },
           },
         ],
@@ -277,30 +533,138 @@ describe('createOpenAPISpec', () => {
 
     expect(resp).toEqual(E.right(expected))
   })
+  describe('Complete spec', () => {
+    it('Multiple routes', () => {
+      const json = createOpenAPISpec(
+        createRouter(
+          [
+            userGetHandler,
+            userPostHandler,
+            healthzHandler,
+            infoHandler,
+          ],
+          {
+            title: 'Test API',
+            description: 'Really great API',
+          }
+        )
+      )
 
-  it('Multiple routes', () => {
-    const json = createOpenAPISpec([
-      userHandler,
-      healthzHandler,
-      infoHandler,
-    ])
-
-    const expected: OpenAPIV3.Document = {
-      openapi: '3.0.0',
-      info: { title: 'My API', version: '1.0.0' },
-      paths: {
-        '/healthz': {
-          get: {
-            description:
-              'Returns a 200 to indicate the service is running',
-            responses: {
-              '200': {
-                description: 'Success',
+      const expected: OpenAPIV3.Document = {
+        openapi: '3.0.0',
+        info: {
+          title: 'Test API',
+          description: 'Really great API',
+          version: '1.0.0',
+        },
+        paths: {
+          '/healthz': {
+            get: {
+              description:
+                'Returns a 200 to indicate the service is running',
+              summary: '/healthz',
+              requestBody: undefined,
+              responses: {
+                '200': {
+                  description: 'Success',
+                  content: {
+                    'application/json': {
+                      schema: {
+                        $ref:
+                          '#/components/schemas/HealthzResponse',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '/user': {
+            get: {
+              description:
+                'Returns a single user from the database',
+              summary: '/user',
+              requestBody: undefined,
+              responses: {
+                '200': {
+                  description: 'Success',
+                  content: {
+                    'application/json': {
+                      schema: {
+                        $ref:
+                          '#/components/schemas/UserSuccess',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            post: {
+              description: 'Saves a user to the database',
+              summary: '/user',
+              requestBody: {
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      required: ['id', 'name'],
+                      properties: {
+                        id: { type: 'number' },
+                        name: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+              responses: {
+                '200': {
+                  description: 'Success',
+                  content: {
+                    'application/json': {
+                      schema: {
+                        $ref:
+                          '#/components/schemas/UserSuccess',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '/info': {
+            post: {
+              description: 'Posted information',
+              summary: 'Information',
+              requestBody: {
                 content: {
                   'application/json': {
                     schema: {
                       $ref:
-                        '#/components/schemas/HealthzResponse',
+                        '#/components/schemas/InfoPostData',
+                    },
+                  },
+                },
+              },
+              responses: {
+                '200': {
+                  description: 'Info fetched successfully',
+                  content: {
+                    'application/json': {
+                      schema: {
+                        $ref:
+                          '#/components/schemas/InfoSuccess',
+                      },
+                    },
+                  },
+                },
+                '500': {
+                  description: 'Failed to fetch info',
+                  content: {
+                    'application/json': {
+                      schema: {
+                        $ref:
+                          '#/components/schemas/InfoFailure',
+                      },
                     },
                   },
                 },
@@ -308,97 +672,68 @@ describe('createOpenAPISpec', () => {
             },
           },
         },
-        '/user': {
-          get: {
-            description:
-              'Returns a single user from the database',
-            responses: {
-              '200': {
-                description: 'Success',
-                content: {
-                  'application/json': {
-                    schema: {
-                      $ref:
-                        '#/components/schemas/UserSuccess',
-                    },
-                  },
+        components: {
+          schemas: {
+            HealthzResponse: {
+              type: 'string',
+              example: 'OK',
+            },
+            InfoFailure: {
+              type: 'object',
+              properties: {
+                errorMsg: {
+                  type: 'string',
+                },
+                optionalStuff: {
+                  type: 'string',
                 },
               },
+              required: ['errorMsg'],
             },
-          },
-        },
-        '/info': {
-          post: {
-            description: 'Posted information',
-            responses: {
-              '200': {
-                description: 'Info fetched successfully',
-                content: {
-                  'application/json': {
-                    schema: {
-                      $ref:
-                        '#/components/schemas/InfoSuccess',
-                    },
-                  },
-                },
+            InfoSuccess: {
+              type: 'object',
+              oneOf: [
+                { type: 'string' },
+                { type: 'number' },
+              ],
+            },
+            InfoPostData: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                age: { type: 'number' },
               },
-              '500': {
-                description: 'Failed to fetch info',
-                content: {
-                  'application/json': {
-                    schema: {
-                      $ref:
-                        '#/components/schemas/InfoFailure',
-                    },
-                  },
-                },
+              required: ['name', 'age'],
+            },
+            User: {
+              type: 'object',
+              properties: {
+                firstName: { type: 'string' },
+                surname: { type: 'string' },
+                userId: { type: 'number' },
               },
+              required: ['userId', 'firstName', 'surname'],
             },
-          },
-        },
-      },
-      components: {
-        schemas: {
-          HealthzResponse: {
-            type: 'string',
-          },
-          InfoFailure: {
-            type: 'object',
-            properties: {
-              errorMsg: {
-                type: 'string',
-              },
-            },
-          },
-          InfoSuccess: {
-            type: 'string',
-          },
-          User: {
-            type: 'object',
-            properties: {
-              firstName: { type: 'string' },
-              surname: { type: 'string' },
-              userId: { type: 'number' },
-            },
-          },
 
-          UserSuccess: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-              users: {
-                type: 'array',
-                items: {
-                  $ref: '#/components/schemas/User',
+            UserSuccess: {
+              type: 'object',
+              properties: {
+                message: { type: 'string' },
+                users: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/User',
+                  },
                 },
               },
+              required: ['message', 'users'],
             },
           },
         },
-      },
-    }
+      }
 
-    expect(json).toEqual(E.right(expected))
+      expect(json).toEqual(E.right(expected))
+    })
   })
 
   it('getPathItemForRoute', () => {

@@ -1,23 +1,23 @@
 import * as t from 'io-ts'
 import * as T from 'fp-ts/Task'
 import * as E from 'fp-ts/Either'
-
-import { runRouteWithHandler, respond } from './runRoute'
-import { routeWithTaskHandler } from './Handler'
+import * as tt from 'io-ts-types'
 import {
   response,
   get,
   lit,
   param,
-} from './routeCombinators'
-import { numberDecoder } from './decoders'
-import { makeRoute } from './makeRoute'
+  makeRoute,
+  taskHandler,
+  runRouteWithHandler,
+  respond,
+} from '../index'
 
 describe('test the handlers', () => {
   it('uses the healthz handler successfully', async () => {
     const responseD = t.literal('OK')
 
-    const healthz = routeWithTaskHandler(
+    const healthz = taskHandler(
       makeRoute(
         get,
         lit('healthz'),
@@ -37,7 +37,9 @@ describe('test the handlers', () => {
     })()
 
     expect(result).toEqual(
-      E.right(E.right({ code: 200, data: 'OK' }))
+      E.right(
+        E.right({ code: 200, data: 'OK', headers: {} })
+      )
     )
   })
 
@@ -48,11 +50,11 @@ describe('test the handlers', () => {
       horse: 23,
     }
 
-    const dogAgesHandler = routeWithTaskHandler(
+    const dogAgesHandler = taskHandler(
       makeRoute(
         get,
         lit('dogs'),
-        param('age', numberDecoder),
+        param('age', tt.NumberFromString),
         response(200, t.array(t.string)),
         response(400, t.string)
       ),
@@ -80,7 +82,13 @@ describe('test the handlers', () => {
       rawHeaders: {},
     })()
     expect(result).toEqual(
-      E.right(E.right({ code: 200, data: ['frank'] }))
+      E.right(
+        E.right({
+          code: 200,
+          data: ['frank'],
+          headers: {},
+        })
+      )
     )
   })
 })

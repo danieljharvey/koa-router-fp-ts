@@ -1,25 +1,49 @@
-import * as E from './Encoder'
-
 import * as t from 'io-ts'
 
+import * as E from './Encoder'
+
 const one: E.WithEncoder<
-  { code: 200; data: { dog: string } },
-  { code: 200; data: { dog: string } }
+  {
+    code: 200
+    data: { dog: string }
+    headers: E.HeaderReturn
+  },
+  {
+    code: 200
+    data: { dog: string }
+    headers: E.HeaderReturn
+  }
 > = E.makeEncoder(200, t.type({ dog: t.string }), {
   schemaName: '200Response',
 })
 
 const two: E.WithEncoder<
-  { code: 201; data: { cat: number } },
-  { code: 201; data: { cat: number } }
+  {
+    code: 201
+    data: { cat: number }
+    headers: E.HeaderReturn
+  },
+  {
+    code: 201
+    data: { cat: number }
+    headers: E.HeaderReturn
+  }
 > = E.makeEncoder(201, t.type({ cat: t.number }), {
   schemaName: '201Response',
   description: 'Horses',
 })
 
 const three: E.WithEncoder<
-  { code: 201; data: { cat: number } },
-  { code: 201; data: { cat: number } }
+  {
+    code: 201
+    data: { cat: number }
+    headers: E.HeaderReturn
+  },
+  {
+    code: 201
+    data: { cat: number }
+    headers: E.HeaderReturn
+  }
 > = E.makeEncoder(201, t.type({ cat: t.number }))
 
 describe('Encoder', () => {

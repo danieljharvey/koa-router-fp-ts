@@ -1,13 +1,13 @@
-import request from 'supertest'
+import * as request from 'supertest'
 
 import { withServer } from '../../helpers/withServer'
-import { serveRoutes } from '../../index'
+import { serve, createRouter } from '../../index'
 
 import { getUser, getUsers } from './with-auth'
 
-const app = serveRoutes(getUser, getUsers)
+const app = serve(createRouter([getUser, getUsers]))
 
-describe('getUser', () => {
+describe('Examples - withAuth - getUser', () => {
   it('fails when no auth headers sent', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server).get('/user/123/')
@@ -69,14 +69,14 @@ describe('getUser', () => {
   })
 })
 
-describe('getUsers', () => {
+describe('Examples - withAuth - getUsers', () => {
   it('fails when no auth headers sent', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server).get('/users/')
 
       expect(reply.status).toEqual(400)
       expect(reply.text).toEqual(
-        'headers: Expecting NumberFromString at session but instead got: undefined'
+        'headers: Expecting NumberFromString at 0.session but instead got: undefined'
       )
     })
   })
@@ -88,7 +88,7 @@ describe('getUsers', () => {
 
       expect(reply.status).toEqual(400)
       expect(reply.text).toEqual(
-        'headers: Expecting NumberFromString at session but instead got: "wrong"'
+        'headers: Expecting NumberFromString at 0.session but instead got: "wrong"'
       )
     })
   })

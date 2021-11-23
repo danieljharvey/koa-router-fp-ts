@@ -1,6 +1,15 @@
-import { AnyRoute, CombinedRoute, combine } from './Route'
+import {
+  AnyRoute,
+  CombinedRoute,
+  combine,
+} from '../types/Route'
 
-type CR<A, B> = CombinedRoute<A, B>
+export type CR<A, B> = CombinedRoute<A, B>
+
+/**
+ *
+ * Giant overloaded function for combining multiple `Route` items together to create a match
+ */
 
 export function makeRoute<A extends AnyRoute>(a: A): A
 export function makeRoute<

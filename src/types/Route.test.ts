@@ -1,17 +1,16 @@
 import * as E from 'fp-ts/Either'
 import * as t from 'io-ts'
-
+import * as tt from 'io-ts-types'
 import {
   get,
   post,
   lit,
   param,
   data,
-  headers,
-} from './routeCombinators'
-import { numberDecoder, booleanDecoder } from './decoders'
-import { matchRoute } from './matchRoute'
-import { makeRoute } from './makeRoute'
+  header,
+} from '../index'
+import { matchRoute } from '../modules/matchRoute'
+import { makeRoute } from '../modules/makeRoute'
 
 const healthz = makeRoute(get, lit('healthz'))
 
@@ -20,19 +19,19 @@ const userName = makeRoute(get, lit('user'), lit('name'))
 const userId = makeRoute(
   get,
   lit('user'),
-  param('id', numberDecoder)
+  param('id', tt.NumberFromString)
 )
 
 const userWithHeaders = makeRoute(
   get,
   lit('users'),
-  headers(t.type({ sessionId: numberDecoder }))
+  header('sessionId', tt.NumberFromString)
 )
 
 const userWithData = makeRoute(
   post,
   lit('users'),
-  data(t.type({ dog: booleanDecoder }))
+  data(t.type({ dog: tt.BooleanFromString }))
 )
 
 describe('route matching', () => {
@@ -47,7 +46,7 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeTruthy()
+    ).toEqual(true)
   })
 
   it('healthz endpoint', () => {
@@ -75,7 +74,7 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
     expect(
       E.isRight(
         matchRoute(healthz)({
@@ -85,7 +84,7 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
   })
   it('username endpoint', () => {
     expect(
@@ -112,7 +111,7 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
   })
 
   it('userId endpoint', () => {
@@ -140,7 +139,7 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
 
     expect(
       E.isRight(
@@ -151,7 +150,7 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
   })
 
   it('userWithHeaders endpoint', () => {
@@ -160,14 +159,14 @@ describe('route matching', () => {
         url: '/users',
         method: 'get',
         rawData: {},
-        rawHeaders: { sessionId: '123' },
+        rawHeaders: { sessionid: '123' },
       })
     ).toEqual(
       E.right({
         params: {},
         query: {},
         data: {},
-        headers: { sessionId: 123 },
+        headers: { sessionid: 123 },
       })
     )
     expect(
@@ -176,10 +175,10 @@ describe('route matching', () => {
           url: '/users',
           method: 'get',
           rawData: {},
-          rawHeaders: { sessionId: 'sdfsdf' },
+          rawHeaders: { sessionid: 'sdfsdf' },
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
 
     expect(
       E.isRight(
@@ -190,7 +189,7 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
   })
 
   it('userWithData endpoint', () => {
@@ -218,7 +217,7 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
 
     expect(
       E.isRight(
@@ -229,6 +228,6 @@ describe('route matching', () => {
           rawHeaders: {},
         })
       )
-    ).toBeFalsy()
+    ).toEqual(false)
   })
 })

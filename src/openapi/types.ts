@@ -1,13 +1,12 @@
 import { OpenAPIV3 } from 'openapi-types'
-
 import * as Arr from 'fp-ts/Array'
 import * as SE from 'fp-ts-contrib/StateEither'
-import * as E from 'fp-ts/Either'
 import * as Ap from 'fp-ts/Apply'
+import type { Either } from 'fp-ts/Either'
 
 export type PathItem = {
   url: string
-  pathItem: OpenAPIV3.PathItemObject<{}>
+  pathItem: OpenAPIV3.PathItemObject
 }
 
 export type NamedSchema = {
@@ -53,8 +52,8 @@ export const addSchema = (
 export const toEither = <S, E, A>(
   stateEither: SE.StateEither<S, E, A>,
   initialState: S
-): E.Either<E, [A, S]> => stateEither(initialState)
+): Either<E, [A, S]> => stateEither(initialState)
 
 export const evaluate = <E, A>(
   stateEither: SE.StateEither<OpenAPIState, E, A>
-): E.Either<E, A> => SE.evalState(stateEither, initialState)
+): Either<E, A> => SE.evalState(stateEither, initialState)

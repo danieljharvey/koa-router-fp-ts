@@ -5,6 +5,8 @@ export type Metadata = {
   schemaName?: string
 }
 
+export type HeaderReturn = Record<string, string>
+
 export type MetadataByStatusCode = Record<string, Metadata>
 
 export type WithEncoder<Input, Output> = {
@@ -32,13 +34,14 @@ export const makeEncoder = <
   encoder: t.Type<Input, Output, unknown>,
   metadata: Metadata = {}
 ): WithEncoder<
-  { code: StatusCode; data: Input },
-  { code: StatusCode; data: Output }
+  { code: StatusCode; data: Input; headers: HeaderReturn },
+  { code: StatusCode; data: Output; headers: HeaderReturn }
 > => ({
   type: 'Encoder',
   encoder: t.type({
     code: t.literal(statusCode),
     data: encoder,
+    headers: t.record(t.string, t.string),
   }),
   metadata: {
     [statusCode]: metadata,

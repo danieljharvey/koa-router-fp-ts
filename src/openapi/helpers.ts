@@ -1,8 +1,9 @@
 import { OpenAPIV3 } from 'openapi-types'
 import * as A from 'fp-ts/Apply'
 import * as SE from 'fp-ts-contrib/StateEither'
-import { Metadata } from '../Encoder'
 import * as t from 'io-ts'
+
+import { Metadata } from '../types/Encoder'
 
 export const sequenceS = A.sequenceS(SE.stateEither)
 
@@ -12,13 +13,17 @@ export const nameIsDeliberate = (name: string): boolean =>
   name !== 'number' &&
   name !== 'boolean'
 
-export const createObjectSchema = (properties: {
-  [x: string]:
-    | OpenAPIV3.SchemaObject
-    | OpenAPIV3.ReferenceObject
-}): OpenAPIV3.SchemaObject => ({
+export const createObjectSchema = (
+  properties: {
+    [x: string]:
+      | OpenAPIV3.SchemaObject
+      | OpenAPIV3.ReferenceObject
+  },
+  required: string[]
+): OpenAPIV3.SchemaObject => ({
   type: 'object',
   properties,
+  required,
 })
 
 export const createReferenceSchema = (
@@ -36,6 +41,7 @@ export const getSchemaName = (
   }
   // get name from .data inside encoder
   const encoderName =
+    // eslint-disable-next-line no-underscore-dangle
     encoder?._tag === 'InterfaceType' &&
     encoder.props?.data?.name
 
@@ -57,11 +63,14 @@ export const statusCodeDescription = (
   }
   if (code >= 200 && code < 300) {
     return 'Success'
-  } else if (code >= 300 && code < 400) {
+  }
+  if (code >= 300 && code < 400) {
     return 'Moved or something'
-  } else if (code >= 400 && code < 500) {
+  }
+  if (code >= 400 && code < 500) {
     return 'User error'
-  } else if (code >= 500 && code < 600) {
+  }
+  if (code >= 500 && code < 600) {
     return 'Internal error'
   }
   return ''

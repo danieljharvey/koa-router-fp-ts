@@ -7,9 +7,9 @@ import {
   MatchError,
   MatchValidationError,
   noResponseValidator,
-} from './MatchError'
-import { RouteWithHandler } from './Handler'
-import * as Enc from './Encoder'
+} from '../types/MatchError'
+import { RouteWithHandler } from '../types/Handler'
+import * as Enc from '../types/Encoder'
 
 export const runRouteWithHandler = <
   ResponseInput extends { code: number; data: unknown },
@@ -64,11 +64,3 @@ const serialiseResponse = <ResponseInput, ResponseOutput>(
   responseEncoder.type === 'Encoder'
     ? pipe(resp, responseEncoder.encoder.encode, E.right)
     : E.left(noResponseValidator() as MatchError)
-
-export const respond = <Code extends number, Data>(
-  code: Code,
-  data: Data
-) => ({
-  code,
-  data,
-})

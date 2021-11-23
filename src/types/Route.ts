@@ -7,7 +7,7 @@ import * as E from './Encoder'
 
 export type GenericRec = Record<string, unknown>
 
-export type EmptyRec = Record<string, never>
+export type EmptyRec = Record<never, never>
 
 // Route is the basic type under everything.
 // It is designed Monoidally so a Route is made by combining multiple Routes
@@ -28,6 +28,7 @@ export type Route<
   dataDecoder: D.Decoder<Data>
   headersDecoder: D.Decoder<Headers>
   description: string[]
+  summary: string[]
 }
 
 // useful for `A extends AnyRoute`
@@ -123,6 +124,7 @@ export const combine = <
     b.responseEncoder
   ),
   description: a.description.concat(...b.description),
+  summary: a.summary.concat(...b.summary),
 })
 
 export const emptyRoute: Route = {
@@ -134,4 +136,5 @@ export const emptyRoute: Route = {
   dataDecoder: { type: 'NoDecoder' },
   headersDecoder: { type: 'NoDecoder' },
   description: [],
+  summary: [],
 }

@@ -1,70 +1,22 @@
-import * as O from 'fp-ts/Option'
 import * as A from 'fp-ts/Array'
 import * as E from 'fp-ts/Either'
-import { pipe, identity } from 'fp-ts/function'
+import { pipe } from 'fp-ts/function'
 import * as Ap from 'fp-ts/Apply'
 
 import {
   MatchError,
   validationError,
   noMatch,
-} from './MatchError'
-import { RouteItem } from './RouteItem'
-import { Method } from './Method'
-import { Route } from './Route'
-
-const splitUrl = (whole: string): string[] => {
-  const pt1 = whole.split('?')[0]
-  return pt1.split('/').filter((a) => a.length > 0)
-}
-
-const parseQueryParams = (
-  whole: string
-): Record<string, string> => {
-  const end = whole.split('?')[1]
-  if (!end) {
-    return {}
-  }
-  const as = end.split('&').map((a) => a.split('='))
-
-  return flattenParams(
-    as.map(([key, val]) => ({ [key]: val }))
-  )
-}
-
-const matchMethod = (
-  method: O.Option<Method>,
-  requestMethod: string
-): boolean =>
-  pipe(
-    method,
-    O.map(
-      (m) => m.toLowerCase() === requestMethod.toLowerCase()
-    ),
-    O.fold(() => false, identity)
-  )
-
-const matchRouteItem = (
-  routeItem: RouteItem,
-  urlPart: string
-): E.Either<MatchError, Record<string, string>> => {
-  if (routeItem.type === 'Literal') {
-    return routeItem.literal.toLowerCase() ===
-      urlPart.toLowerCase()
-      ? E.right({})
-      : E.left(
-          noMatch(
-            `${urlPart} did not match ${routeItem.literal}`
-          )
-        )
-  }
-  return E.right({ [routeItem.name]: urlPart })
-}
-
-const flattenParams = (
-  params: readonly Record<string, string>[]
-): Record<string, string> =>
-  params.reduce((all, a) => ({ ...all, ...a }), {})
+} from '../types/MatchError'
+import { Route } from '../types/Route'
+import {
+  splitUrl,
+  getDefaults,
+  matchMethod,
+  matchRouteItem,
+  flattenParams,
+  parseQueryParams,
+} from '../helpers/matchHelpers'
 
 export type MatchedRoute<Param, Query, Data, Headers> = {
   params: Param
@@ -80,6 +32,12 @@ export type MatchInputs = {
   rawHeaders: Record<string, unknown>
 }
 
+/**
+ *
+ * This does the route matching. Given all the interesting parts of the request, it checks whether this is a route we are interested in.
+ *
+ * Most of this is mashing the data till into a shape that can be compared with the `io-ts` validators for each kind of data
+ */
 export const matchRoute = <
   ResponseInput,
   ResponseOutput,
@@ -105,8 +63,16 @@ export const matchRoute = <
   MatchError,
   MatchedRoute<Param, Query, Data, Headers>
 > => {
-  const items = splitUrl(url)
-  const queryParams = parseQueryParams(url)
+  const decodedUrl = decodeURI(url)
+  const items = splitUrl(decodedUrl)
+  const queryParams = {
+    ...getDefaults(route.queryDecoder, []),
+    ...parseQueryParams(decodedUrl),
+  }
+  const headers = {
+    ...getDefaults(route.headersDecoder, undefined),
+    ...rawHeaders,
+  }
   const pairs = A.zip(route.parts, items)
 
   if (
@@ -160,12 +126,12 @@ export const matchRoute = <
 
   const headersMatches = pipe(
     route.headersDecoder.type === 'Decoder'
-      ? route.headersDecoder.decoder.decode(rawHeaders)
+      ? route.headersDecoder.decoder.decode(headers)
       : E.right({} as Headers),
     E.mapLeft(validationError('headers'))
   )
 
-  const sequenceT = Ap.sequenceT(E.either)
+  const sequenceT = Ap.sequenceT(E.Apply)
   return pipe(
     sequenceT(
       paramMatches,

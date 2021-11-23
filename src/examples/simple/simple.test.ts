@@ -1,13 +1,13 @@
-import request from 'supertest'
+import * as request from 'supertest'
 
 import { withServer } from '../../helpers/withServer'
-import { serveRoutes } from '../../index'
+import { serve, createRouter } from '../../index'
 
 import { getUser, getUsers } from './simple'
 
-const app = serveRoutes(getUser, getUsers)
+const app = serve(createRouter([getUser, getUsers]))
 
-describe('getUser', () => {
+describe('Examples - simple - getUser', () => {
   it('cannot find user', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server).get('/user/123/')
@@ -31,7 +31,7 @@ describe('getUser', () => {
   })
 })
 
-describe('getUsers', () => {
+describe('Examples - simple - getUsers', () => {
   it('found users', async () => {
     await withServer(app, async (server) => {
       const reply = await request(server).get('/users/')

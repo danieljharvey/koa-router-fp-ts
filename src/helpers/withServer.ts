@@ -1,13 +1,13 @@
 import * as Koa from 'koa'
 import { Server } from 'http'
-import bodyParser from 'koa-bodyparser'
+import * as bodyParser from 'koa-bodyparser'
 
 export const withServer = async (
   router: Koa.Middleware,
   fn: (server: Server) => Promise<unknown>
 ) => {
   // eslint-disable-next-line new-cap
-  const app = new Koa.default()
+  const app = new Koa()
 
   app.use(bodyParser())
   app.use(router)
