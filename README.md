@@ -2,13 +2,14 @@
 
 A new router for [koa](https://koajs.com/) that uses [io-ts](https://gcanti.github.io/io-ts/) validators to check inputs before running to ensure validation is pushed to the very border of your application.
 
-Somewhat inspired by Haskell's [Servant](https://mmhaskell.com/real-world/servant) library.
+## Similar works
+
+Haskell's [Servant](https://mmhaskell.com/real-world/servant) library.
+Python's [FastAPI](https://fastapi.tiangolo.com/) library.
 
 ## Documentation
 
-A sourcefile for OpenAPI documentation is generated automatically and served at a filename of your
-choice (this defaults to `swagger.json`). You will need to use Swagger or
-Redoc to turn this into readable documentation.
+A sourcefile for OpenAPI documentation is generated automatically and served at a filename of your choice (this defaults to `swagger.json`). You will need to use Swagger or Redoc to turn this into readable documentation.
 
 ## Simplest example
 
@@ -46,11 +47,12 @@ const server = app.listen(3000)
 // let's parse some input from our route, that would be nice
 // `koa-router-ts` uses `io-ts` extensively, so let's invite it to the party
 import * as t from 'io-ts'
+import * as tt from 'io-ts-types'
 
 // this new route should match `GET /user/:id` and return a `200` status code along with a `string` response
 
 // NumberToString is a validator that reads a string and tries to
-const userId = param('id', t.NumberFromString)
+const userId = param('id', tt.NumberFromString)
 
 const getUserRoute = makeRoute(
   get,
@@ -73,7 +75,7 @@ const userHandler = routeWithPureHandler(
 const getUserRoute2 = makeRoute(
   get,
   lit('user'),
-  param('userId', t.NumberFromString),
+  param('userId', tt.NumberFromString),
   response(200, t.string),
   response(500, t.string)
 )
@@ -130,7 +132,7 @@ const headersHandler = routeWithPureHandler(
 const getQueryRoute = makeRoute(
   get,
   lit('things'),
-  query('id', t.NumberFromString),
+  query('id', tt.NumberFromString),
   response(200, t.string)
 )
 

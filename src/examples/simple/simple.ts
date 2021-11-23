@@ -1,6 +1,6 @@
 import * as t from 'io-ts'
 import * as E from 'fp-ts/Either'
-
+import * as tt from 'io-ts-types'
 import {
   makeRoute,
   get,
@@ -29,13 +29,13 @@ const userNotFoundResponse = t.string
 const userResponse = t.type({
   name: t.string,
   age: t.number,
-  birthday: t.DateFromISOString,
+  birthday: tt.DateFromISOString,
 })
 
 const getUserRoute = makeRoute(
   get,
   lit('user'),
-  param('id', t.NumberFromString),
+  param('id', tt.NumberFromString),
   response(400, userNotFoundResponse, {
     description: 'The user could not be found',
   }),

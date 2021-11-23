@@ -81,7 +81,7 @@ export const response = <
  * makeRoute(
  *   get,
  *   lit('user'),
- *   param('userId',t.NumberFromString),
+ *   param('userId',tt.NumberFromString),
  *   response(200, t.literal('ok'))
  * )
  *
@@ -110,7 +110,7 @@ export const param = <ParamName extends string, Param>(
  * makeRoute(
  *   get,
  *   lit('user'),
- *   query('id',t.NumberFromString),
+ *   query('id',tt.NumberFromString),
  *   response(200, t.literal('ok'))
  * )
  *
@@ -164,7 +164,7 @@ export const data = <Data>(
  * makeRoute(
  *   get,
  *   lit('user'),
- *   header('auth-token', t.NumberFromString),
+ *   header('auth-token', tt.NumberFromString),
  *   response(200, t.literal('ok'))
  * )
  *

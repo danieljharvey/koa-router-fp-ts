@@ -72,7 +72,7 @@ export const taskHandler = <
  * const userRoute = makeRoute(
  *   get,
  *   lit('user'),
- *   param('id',t.NumberFromString),
+ *   param('id',tt.NumberFromString),
  *   response(200, t.string),
  *   response(400, t.string),
  * )
@@ -255,7 +255,7 @@ export const pureHandler = <
  * const userRoute = makeRoute(
  *   get,
  *   lit('user'),
- *   param('id',t.NumberFromString),
+ *   param('id',tt.NumberFromString),
  *   response(200, t.string),
  *   response(400, t.string),
  * )

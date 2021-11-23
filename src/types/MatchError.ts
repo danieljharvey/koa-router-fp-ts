@@ -1,5 +1,6 @@
 import * as E from 'fp-ts/Either'
 import * as t from 'io-ts'
+import prettyReporter from 'io-ts-reporters'
 
 export type MatchArea =
   | 'headers'
@@ -17,7 +18,7 @@ export const validationError = (
 ) => (errors: t.Errors) => ({
   type: 'ValidationError' as const,
   which,
-  message: t.SafeReporter.report(E.left(errors)),
+  message: prettyReporter.report(E.left(errors)),
 })
 
 export const noResponseValidator = () => ({

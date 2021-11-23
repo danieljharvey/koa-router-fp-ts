@@ -9,7 +9,7 @@ import { CR, makeRoute } from './makeRoute'
  * `GET /users/123/information`
  *
  * @example
- * const userId = param('userId', t.NumberFromString)
+ * const userId = param('userId', tt.NumberFromString)
  *
  * makeRoute(
  *   get,
